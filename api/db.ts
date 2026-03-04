@@ -1,14 +1,23 @@
 import { createClient } from "@libsql/client/web";
 
-export const tursoClient = new Proxy({}, {
-  get: (target, prop) => {
-    if (!process.env.TURSO_DATABASE_URL) {
-      throw new Error("TURSO_DATABASE_URL is not set in Vercel environment variables.");
-    }
-    const client = createClient({
-      url: process.env.TURSO_DATABASE_URL,
-      authToken: process.env.TURSO_AUTH_TOKEN || "",
-    });
-    return (client as any)[prop];
+// @libsql/client/web requires https:// not libsql://
+function fixUrl(url: string): string {
+  if (url.startsWith("libsql://")) {
+    return url.replace("libsql://", "https://");
   }
-}) as ReturnType<typeof createClient>;
+  return url;
+}
+
+export function getDb() {
+  const rawUrl = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+  if (!rawUrl) {
+    throw new Error("TURSO_DATABASE_URL is not set in Vercel environment variables.");
+  }
+  return createClient({ url: fixUrl(rawUrl), authToken: authToken || "" });
+}
+
+export const tursoClient = {
+  execute: (...args: any[]) => getDb().execute(...(args as [any])),
+  batch: (...args: any[]) => getDb().batch(...(args as [any])),
+};
