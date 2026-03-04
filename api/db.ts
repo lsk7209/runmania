@@ -9,12 +9,12 @@ function fixUrl(url: string): string {
 }
 
 export function getDb() {
-  const rawUrl = process.env.TURSO_DATABASE_URL;
-  const authToken = process.env.TURSO_AUTH_TOKEN;
+  const rawUrl = (process.env.TURSO_DATABASE_URL || "").trim();
+  const authToken = (process.env.TURSO_AUTH_TOKEN || "").trim();
   if (!rawUrl) {
     throw new Error("TURSO_DATABASE_URL is not set in Vercel environment variables.");
   }
-  return createClient({ url: fixUrl(rawUrl), authToken: authToken || "" });
+  return createClient({ url: fixUrl(rawUrl), authToken });
 }
 
 export const tursoClient = {
