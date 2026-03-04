@@ -1,0 +1,24 @@
+# Vercel 배포 준비 및 종합 검토 (Comprehensive Audit)
+
+- [x] Vercel 배포 요구사항 파악 (vercel.json 작성 완료)
+- [x] 종합 코드 리뷰 및 아키텍처 분석
+- [x] 브라우저 에이전트를 통한 UI/UX 검증 (로컬 서버 렌더링)
+- [x] Turso 전환을 위한 마이그레이션 계획서 수립 (승인 완료)
+- [x] **Phase 1: 의존성 변경 및 Supabase 제거**
+  - [x] `@supabase/supabase-js` 제거 및 `@libsql/client` 설치
+  - [x] `src/integrations/supabase` 디렉토리 삭제
+- [x] **Phase 2: Vercel Serverless API 구축 (백엔드 추가)**
+  - [x] `api/db.ts` Turso 클라이언트 공유 모듈
+  - [x] `api/posts.ts` (GET) 공개 글 목록 라우트 추가
+  - [x] `api/views.ts` (GET/POST) 조회수 라우트 추가
+  - [x] `api/admin-blog.ts` 관리자 CRUD 라우트 완전 구현
+  - [x] `api/cron.ts` (Github Cron 용) 주기적 작업 라우트 추가
+- [x] **Phase 3: 프론트엔드 연동 전환**
+  - [x] `src/pages/Blog.tsx` DB 호출 방식 변경 (fetch `/api/posts`)
+  - [x] `src/pages/Admin.tsx` Edge Function → fetch `/api/admin-blog` 변경
+- [x] **vercel.json API 라우트 분리** (API는 pass-through, SPA는 fallback)
+- [ ] **Phase 4: 환경변수 세팅 및 Vercel 배포**
+  - [ ] Vercel 대시보드에 환경변수 등록 (TURSO_DATABASE_URL, TURSO_AUTH_TOKEN, ADMIN_PASSWORD, CRON_SECRET)
+  - [ ] Turso DB에 테이블 스키마 생성 (blog_posts, blog_views, app_settings)
+  - [ ] GitHub Actions 크론 잡 설정
+  - [ ] 실제 Vercel 배포 및 동작 확인
