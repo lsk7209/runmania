@@ -264,10 +264,36 @@ const Admin = () => {
     if (titles.length === 0) return;
     try {
       setLoading(true);
-      await adminCall(password, "bulk_create", { titles });
-      toast({ title: `${titles.length}개의 초안이 생성되었습니다` });
+      toast({ title: `${titles.length}개 초안 생성 중...` });
+      const result = await adminCall(password, "bulk_create", { titles });
       setBulkTitles("");
       setShowBulk(false);
+
+      // Auto-generate AI content for each created post
+      const createdIds: string[] = result?.ids || [];
+      if (createdIds.length > 0) {
+        toast({ title: `AI 콘텐츠 자동 생성 중...`, description: `${createdIds.length}개 글을 순차적으로 생성합니다. 잠시만 기다려주세요.` });
+        let successCount = 0;
+        for (const id of createdIds) {
+          try {
+            const genResponse = await fetch("/api/admin-generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ password, postId: id }),
+            });
+            const genResult = await genResponse.json();
+            if (genResponse.ok) {
+              successCount++;
+              toast({ title: `(${successCount}/${createdIds.length}) AI 생성 완료` });
+            }
+          } catch (e) {
+            // continue even if one fails
+          }
+        }
+        toast({ title: `✅ 완료!`, description: `${successCount}개 글의 AI 콘텐츠가 생성되었습니다.` });
+      } else {
+        toast({ title: `${titles.length}개의 초안이 생성되었습니다` });
+      }
       loadPosts();
     } catch (e: any) {
       toast({ title: "일괄 생성 실패", description: e.message, variant: "destructive" });

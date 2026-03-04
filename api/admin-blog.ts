@@ -123,6 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // ── Bulk create drafts ───────────────────────────────────────
             case "bulk_create": {
                 const titles: string[] = data.titles ?? [];
+                const createdIds: string[] = [];
                 for (const title of titles) {
                     const id = crypto.randomUUID();
                     const slug = title
@@ -135,8 +136,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   VALUES (?,?,?, '[]', '[]', '[]', '[]', 'draft', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
                         args: [id, title, slug],
                     });
+                    createdIds.push(id);
                 }
-                return res.status(200).json({ created: titles.length });
+                return res.status(200).json({ created: titles.length, ids: createdIds });
             }
 
             // ── Seed hardcoded posts ─────────────────────────────────────
