@@ -8,7 +8,7 @@ const utilities = [
     title: "발 진단",
     description: "간단한 질문을 통해 나의 발 유형(평발, 요족 등)을 진단하고 적합한 러닝화 유형을 추천받습니다.",
     icon: <Footprints className="h-6 w-6" />,
-    path: "/diagnosis",
+    path: "/tools/diagnosis",
     color: "from-emerald-500/20 to-teal-500/20 text-emerald-500",
     border: "group-hover:border-emerald-500/50",
     bgIcon: "bg-emerald-500/10",

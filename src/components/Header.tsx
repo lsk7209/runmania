@@ -35,8 +35,8 @@ const Header = () => {
                 key={item.path}
                 to={item.path}
                 className={`relative rounded-lg px-3 py-1.5 text-sm transition-colors ${isActive
-                    ? "text-primary font-medium"
-                    : "text-muted-foreground hover:text-foreground"
+                  ? "text-primary font-medium"
+                  : "text-muted-foreground hover:text-foreground"
                   }`}
               >
                 {item.label}
@@ -52,7 +52,7 @@ const Header = () => {
         </nav>
 
         {/* Desktop CTA */}
-        <Link to="/diagnosis" className="hidden md:block">
+        <Link to="/tools/diagnosis" className="hidden md:block">
           <Button size="sm" className="gap-1.5 rounded-lg bg-primary text-xs text-primary-foreground neon-border">
             무료 진단
           </Button>
@@ -85,15 +85,15 @@ const Header = () => {
                     to={item.path}
                     onClick={() => setMobileOpen(false)}
                     className={`rounded-lg px-3 py-2.5 text-sm transition-colors ${isActive
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-secondary"
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-muted-foreground hover:bg-secondary"
                       }`}
                   >
                     {item.label}
                   </Link>
                 );
               })}
-              <Link to="/diagnosis" onClick={() => setMobileOpen(false)}>
+              <Link to="/tools/diagnosis" onClick={() => setMobileOpen(false)}>
                 <Button className="mt-2 w-full bg-primary text-primary-foreground neon-border">
                   무료 진단 시작
                 </Button>
