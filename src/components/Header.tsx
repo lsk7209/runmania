@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 
 const navItems = [
   { label: "홈", path: "/" },
-  { label: "발 진단", path: "/diagnosis" },
   { label: "신발 리뷰", path: "/reviews" },
   { label: "유틸리티", path: "/tools" },
   { label: "블로그", path: "/blog" },
@@ -35,11 +34,10 @@ const Header = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`relative rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                  isActive
+                className={`relative rounded-lg px-3 py-1.5 text-sm transition-colors ${isActive
                     ? "text-primary font-medium"
                     : "text-muted-foreground hover:text-foreground"
-                }`}
+                  }`}
               >
                 {item.label}
                 {isActive && (
@@ -86,11 +84,10 @@ const Header = () => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setMobileOpen(false)}
-                    className={`rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                      isActive
+                    className={`rounded-lg px-3 py-2.5 text-sm transition-colors ${isActive
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-muted-foreground hover:bg-secondary"
-                    }`}
+                      }`}
                   >
                     {item.label}
                   </Link>

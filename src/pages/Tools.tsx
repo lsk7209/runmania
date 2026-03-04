@@ -1,9 +1,18 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Wrench, Calculator, Ruler, ArrowRight } from "lucide-react";
+import { Wrench, Calculator, Ruler, ArrowRight, Footprints } from "lucide-react";
 import usePageMeta from "@/hooks/usePageMeta";
 
 const utilities = [
+  {
+    title: "발 진단",
+    description: "간단한 질문을 통해 나의 발 유형(평발, 요족 등)을 진단하고 적합한 러닝화 유형을 추천받습니다.",
+    icon: <Footprints className="h-6 w-6" />,
+    path: "/diagnosis",
+    color: "from-emerald-500/20 to-teal-500/20 text-emerald-500",
+    border: "group-hover:border-emerald-500/50",
+    bgIcon: "bg-emerald-500/10",
+  },
   {
     title: "페이스 계산기",
     description: "러닝 중 완주 시간을 예측하거나, 목표 완주 시간에 필요한 러닝 페이스를 계산합니다.",

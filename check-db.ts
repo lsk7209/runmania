@@ -1,25 +1,32 @@
 import { createClient } from "@libsql/client/web";
-import * as fs from "fs";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 
-const envFile = fs.readFileSync(".env.local", "utf-8");
-const envVars = envFile.split("\n").reduce((acc, line) => {
-    const [key, ...valueParts] = line.split("=");
-    if (key && valueParts.length > 0) acc[key.trim()] = valueParts.join("=").trim();
-    return acc;
-}, {} as Record<string, string>);
+const dbUrl = process.env.TURSO_DATABASE_URL;
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
-const url = envVars["TURSO_DATABASE_URL"];
-const authToken = envVars["TURSO_AUTH_TOKEN"];
-
-const client = createClient({ url, authToken });
-
-async function checkDb() {
-    try {
-        const rs = await client.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
-        console.log("Tables in Turso DB:", rs.rows.map(row => row.name));
-    } catch (error) {
-        console.error("Failed to query DB:", error);
-    }
+if (!dbUrl || !authToken) {
+  console.error("Missing DB credentials");
+  process.exit(1);
 }
 
-checkDb();
+const url = dbUrl.trim().startsWith("libsql://") 
+  ? dbUrl.trim().replace("libsql://", "https://") 
+  : dbUrl.trim();
+
+const client = createClient({
+  url: url,
+  authToken: authToken.trim(),
+});
+
+async function run() {
+  try {
+    const result = await client.execute("SELECT id, title, status, created_at FROM blog_posts ORDER BY created_at DESC");
+    console.log(`Total posts visible in Turso DB: ${result.rows.length}`);
+    console.table(result.rows);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+run();
