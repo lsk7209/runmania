@@ -11,5 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     converted,
     authTokenLength: (process.env.TURSO_AUTH_TOKEN || "").length,
     adminPasswordSet: !!process.env.ADMIN_PASSWORD,
+    geminiApiKeySet: !!process.env.GEMINI_API_KEY,
+    geminiApiKeyLength: (process.env.GEMINI_API_KEY || "").length,
   });
 }
