@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 
-import { Eye, EyeOff, Plus, Edit, Trash2, Upload, Clock, CheckCircle2, FileText, Settings, Send } from "lucide-react";
+import { Eye, EyeOff, Plus, Edit, Trash2, Upload, Clock, CheckCircle2, FileText, Settings, Send, Sparkles } from "lucide-react";
 
 interface BlogPost {
   id: string;
@@ -222,6 +222,29 @@ const Admin = () => {
     }
   };
 
+  const handleGenerate = async (id: string) => {
+    try {
+      setLoading(true);
+      toast({ title: "AI 생성 중...", description: "잠시만 기다려주세요 (약 10~20초 소요)" });
+
+      const response = await fetch("/api/admin-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, postId: id }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "생성 실패");
+
+      toast({ title: "AI 생성이 완료되었습니다" });
+      loadPosts();
+    } catch (e: any) {
+      toast({ title: "생성 실패", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleBulkCreate = async () => {
     const titles = bulkTitles.split("\n").map((t) => t.trim()).filter(Boolean);
     if (titles.length === 0) return;
@@ -388,8 +411,11 @@ const Admin = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEditor(post)}>
+                        <Button variant="ghost" size="icon" onClick={() => openEditor(post)} title="수정">
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleGenerate(post.id)} title="AI 자동 생성">
+                          <Sparkles className="h-4 w-4 text-purple-500" />
                         </Button>
                         {post.status !== "published" ? (
                           <Button variant="ghost" size="icon" onClick={() => handlePublish(post.id)}>

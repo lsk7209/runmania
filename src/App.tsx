@@ -9,9 +9,10 @@ import Diagnosis from "@/pages/Diagnosis";
 import Blog from "@/pages/Blog";
 import Reviews from "@/pages/Reviews";
 import Tools from "@/pages/Tools";
+import PaceCalculator from "@/pages/PaceCalculator";
+import SizeConverter from "@/pages/SizeConverter";
 import NotFound from "@/pages/NotFound";
 import Admin from "@/pages/Admin";
-import { Navigate } from "react-router-dom";
 
 const queryClient = new QueryClient();
 
@@ -30,8 +31,8 @@ const App = () => (
           <Route path="/reviews" element={<Reviews />} />
           <Route path="/reviews/:slug" element={<Reviews />} />
           <Route path="/tools" element={<Tools />} />
-          <Route path="/tools/pace-calculator" element={<Navigate to="/tools?tab=pace" replace />} />
-          <Route path="/tools/size-converter" element={<Navigate to="/tools?tab=size" replace />} />
+          <Route path="/tools/pace-calculator" element={<PaceCalculator />} />
+          <Route path="/tools/size-converter" element={<SizeConverter />} />
           <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
