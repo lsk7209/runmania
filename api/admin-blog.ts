@@ -11,8 +11,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { password, action, data } = req.body || {};
 
     // Auth check
-    if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD.trim()) {
-        return res.status(401).json({ error: "Unauthorized" });
+    const envPass = (ADMIN_PASSWORD || "").trim();
+    const inputPass = (password || "").trim();
+
+    if (!envPass || inputPass !== envPass) {
+        return res.status(401).json({
+            error: "Unauthorized",
+            debug: {
+                envLength: envPass.length,
+                inputLength: inputPass.length,
+                envChars: [...envPass].map(c => c.charCodeAt(0)),
+                inputChars: [...inputPass].map(c => c.charCodeAt(0)),
+                hasEnv: !!ADMIN_PASSWORD
+            }
+        });
     }
 
     try {
