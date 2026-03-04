@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { tursoClient } from "./db";
+import { tursoClient } from "./db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== "POST" && req.method !== "GET") {

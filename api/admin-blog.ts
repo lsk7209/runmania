@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { tursoClient } from "./db";
+import { tursoClient } from "./db.js";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
