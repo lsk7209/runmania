@@ -39,9 +39,19 @@ const adminCall = async (password: string, action: string, data?: any) => {
     },
     body: JSON.stringify({ password, action, data }),
   });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "API error");
-  return result;
+
+  if (!response.ok) {
+    let errorMessage = `HTTP ${response.status}`;
+    try {
+      const errJson = await response.json();
+      errorMessage = errJson.message || errJson.error || errorMessage;
+    } catch (e) {
+      // Can't parse JSON
+    }
+    throw new Error(errorMessage);
+  }
+
+  return await response.json();
 };
 
 const Admin = () => {
@@ -76,8 +86,12 @@ const Admin = () => {
       setPassword(passwordInput);
       setAuthenticated(true);
       toast({ title: "로그인 성공" });
-    } catch {
-      toast({ title: "비밀번호가 올바르지 않습니다", variant: "destructive" });
+    } catch (e: any) {
+      toast({
+        title: "로그인 실패",
+        description: e.message || "서버 통신 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
