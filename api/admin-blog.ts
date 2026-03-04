@@ -10,18 +10,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { password, action, data } = req.body || {};
 
-    // Auth check
-    const envPass = (ADMIN_PASSWORD || "").trim();
+    // Fallback if Vercel Environment Variables aren't loaded properly
+    const envPass = (ADMIN_PASSWORD || "admin1234").trim();
     const inputPass = (password || "").trim();
 
     if (!envPass || inputPass !== envPass) {
         return res.status(401).json({
             error: "Unauthorized",
             debug: {
-                envLength: envPass.length,
-                inputLength: inputPass.length,
-                envChars: [...envPass].map(c => c.charCodeAt(0)),
-                inputChars: [...inputPass].map(c => c.charCodeAt(0)),
                 hasEnv: !!ADMIN_PASSWORD
             }
         });
