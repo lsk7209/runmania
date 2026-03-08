@@ -16,7 +16,7 @@ const Diagnosis = () => {
   usePageMeta({
     title: "러닝화 무료 발 진단 | 3분 맞춤 신발 추천 | 런닝화매니아",
     description: "7개 질문으로 내 발에 맞는 러닝화를 찾아드립니다. 족저근막염, 편평족, 무릎 통증 등 발 상태별 맞춤 러닝화 추천.",
-    canonicalPath: "/diagnosis",
+    canonicalPath: "/tools/diagnosis",
     keywords: "러닝화 진단, 발 진단, 맞춤 러닝화, 족저근막염 신발, 편평족 러닝화",
   });
 

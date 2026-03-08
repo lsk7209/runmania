@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Footprints, Menu, X } from "lucide-react";
@@ -15,6 +15,16 @@ const Header = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileOpen) closeMobile();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen, closeMobile]);
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
@@ -29,7 +39,9 @@ const Header = () => {
         {/* Desktop nav */}
         <nav className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = item.path === "/"
+              ? location.pathname === "/"
+              : location.pathname.startsWith(item.path);
             return (
               <Link
                 key={item.path}
@@ -61,6 +73,9 @@ const Header = () => {
         {/* Mobile menu toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-nav"
           className="md:hidden text-muted-foreground"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -76,9 +91,11 @@ const Header = () => {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden border-t border-border bg-background md:hidden"
           >
-            <nav className="flex flex-col p-4 gap-1">
+            <nav id="mobile-nav" className="flex flex-col p-4 gap-1">
               {navItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive = item.path === "/"
+                  ? location.pathname === "/"
+                  : location.pathname.startsWith(item.path);
                 return (
                   <Link
                     key={item.path}

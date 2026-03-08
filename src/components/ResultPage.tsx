@@ -1,4 +1,5 @@
 import { useRef, useCallback, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { toPng } from "html-to-image";
 import {
@@ -12,6 +13,10 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import type { DiagnosisResult, Shoe } from "@/data/shoesDb";
 import { getShoeImage } from "@/data/shoeImages";
+
+function shoeSlug(name: string) {
+  return name.replace(/\s+/g, "-").replace(/[()]/g, "").toLowerCase();
+}
 
 interface ResultPageProps {
   result: DiagnosisResult;
@@ -238,7 +243,12 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
 
             <ShoeImage shoe={result.recommended} />
 
-            <h2 className="mt-4 mb-1 text-xl font-bold">{result.recommended.name}</h2>
+            <Link to={`/reviews/${shoeSlug(result.recommended.name)}`} className="group">
+              <h2 className="mt-4 mb-1 text-xl font-bold group-hover:text-primary transition-colors">
+                {result.recommended.name}
+                <ExternalLink className="ml-1.5 inline h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
+              </h2>
+            </Link>
             <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
               {result.recommended.description}
             </p>
@@ -277,10 +287,13 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
                   <div key={shoe.name} className="rounded-xl border border-border bg-secondary/30 overflow-hidden">
                     <ShoeImage shoe={shoe} />
                     <div className="p-4">
-                      <div className="flex items-center gap-1.5">
+                      <Link to={`/reviews/${shoeSlug(shoe.name)}`} className="group flex items-center gap-1.5">
                         <CheckCircle2 className="h-3 w-3 shrink-0 text-primary/60" />
-                        <p className="text-sm font-semibold">{shoe.name}</p>
-                      </div>
+                        <p className="text-sm font-semibold group-hover:text-primary transition-colors">
+                          {shoe.name}
+                          <ExternalLink className="ml-1 inline h-3 w-3 text-muted-foreground group-hover:text-primary" />
+                        </p>
+                      </Link>
                       <p className="mt-1 text-xs text-muted-foreground">{shoe.description}</p>
                       <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
                         <span className="rounded bg-secondary px-2 py-0.5 text-muted-foreground">

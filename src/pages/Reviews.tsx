@@ -168,9 +168,8 @@ const CompareView = ({ shoes, onClose }: { shoes: [Shoe, Shoe]; onClose: () => v
             return (
               <div
                 key={row.label}
-                className={`grid grid-cols-[1fr_100px_1fr] items-center gap-2 px-5 py-3 text-xs ${
-                  i < specRows.length - 1 ? "border-b border-border" : ""
-                }`}
+                className={`grid grid-cols-[1fr_100px_1fr] items-center gap-2 px-5 py-3 text-xs ${i < specRows.length - 1 ? "border-b border-border" : ""
+                  }`}
               >
                 <div className={`text-right ${better === a ? "text-primary font-medium" : ""}`}>
                   {row.getVal(a)}
@@ -223,7 +222,7 @@ const CompareView = ({ shoes, onClose }: { shoes: [Shoe, Shoe]; onClose: () => v
         {/* CTA */}
         <div className="rounded-2xl border border-border bg-card p-6 text-center">
           <p className="mb-3 text-sm text-muted-foreground">어떤 신발이 내 발에 맞을까?</p>
-          <Link to="/diagnosis">
+          <Link to="/tools/diagnosis">
             <Button className="gap-2 rounded-xl bg-primary text-primary-foreground neon-border">
               무료 발 진단 받기 →
             </Button>
@@ -319,9 +318,8 @@ const ReviewList = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
           >
-            <div className={`group overflow-hidden rounded-2xl border bg-card transition-all hover:card-glow ${
-              isSelected ? "border-primary neon-border" : "border-border hover:border-primary/30"
-            }`}>
+            <div className={`group overflow-hidden rounded-2xl border bg-card transition-all hover:card-glow ${isSelected ? "border-primary neon-border" : "border-border hover:border-primary/30"
+              }`}>
               <Link to={`/reviews/${slug}`}>
                 {img && (
                   <div className="h-36 overflow-hidden bg-secondary">
@@ -358,13 +356,12 @@ const ReviewList = ({
                 <button
                   onClick={(e) => { e.preventDefault(); onToggleCompare(shoe); }}
                   disabled={!isSelected && compareSelected.length >= 2}
-                  className={`w-full rounded-lg border py-1.5 text-[11px] font-medium transition-all ${
-                    isSelected
+                  className={`w-full rounded-lg border py-1.5 text-[11px] font-medium transition-all ${isSelected
                       ? "border-primary bg-primary/10 text-primary"
                       : compareSelected.length >= 2
                         ? "border-border text-muted-foreground/40 cursor-not-allowed"
                         : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   <GitCompareArrows className="mr-1 inline h-3 w-3" />
                   {isSelected ? "비교 해제" : "비교 선택"}
@@ -383,6 +380,19 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
   const shoe = SHOES_DB.find(
     (s) => s.name.replace(/\s+/g, "-").replace(/[()]/g, "").toLowerCase() === slug
   );
+
+  usePageMeta({
+    title: shoe
+      ? `${shoe.name} 리뷰 | ${shoe.brand} 러닝화 상세 분석 | 런닝화매니아`
+      : "리뷰를 찾을 수 없습니다 | 런닝화매니아",
+    description: shoe
+      ? `${shoe.name} 상세 리뷰 - ${shoe.description}`
+      : "요청하신 러닝화 리뷰를 찾을 수 없습니다.",
+    canonicalPath: `/reviews/${slug}`,
+    keywords: shoe
+      ? `${shoe.name}, ${shoe.brand} 러닝화, 러닝화 리뷰, ${shoe.type}`
+      : "러닝화 리뷰",
+  });
 
   if (!shoe) {
     return (
@@ -407,8 +417,8 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         {img && (
-           <div className="mb-6 overflow-hidden rounded-2xl border border-border">
-                <img src={img} alt={`${shoe.name} ${shoe.brand} 러닝화 상세 리뷰 사진`} className="w-full object-cover" />
+          <div className="mb-6 overflow-hidden rounded-2xl border border-border">
+            <img src={img} alt={`${shoe.name} ${shoe.brand} 러닝화 상세 리뷰 사진`} className="w-full object-cover" />
           </div>
         )}
 
@@ -587,7 +597,7 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
         {/* CTA */}
         <div className="rounded-2xl border border-border bg-card p-6 text-center">
           <p className="mb-3 text-sm text-muted-foreground">이 신발이 내 발에 맞을까?</p>
-          <Link to="/diagnosis">
+          <Link to="/tools/diagnosis">
             <button className="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground neon-border">
               무료 발 진단 받기 →
             </button>
@@ -607,7 +617,7 @@ const Reviews = () => {
   usePageMeta({
     title: "러닝화 리뷰 비교 | 10개 모델 상세 분석 | 런닝화매니아",
     description: "아식스 카야노, 뉴발란스 1080, 호카 본디 등 인기 러닝화 10개 모델 상세 리뷰 및 스펙 비교.",
-    canonicalPath: slug ? `/reviews/${slug}` : "/reviews",
+    canonicalPath: "/reviews",
     keywords: "러닝화 리뷰, 러닝화 비교, 아식스 카야노, 뉴발란스 1080, 호카 본디",
   });
 

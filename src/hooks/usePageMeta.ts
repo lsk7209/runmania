@@ -16,8 +16,12 @@ const usePageMeta = ({ title, description, canonicalPath, keywords }: PageMetaOp
     const prevDesc = metaDesc?.getAttribute("content") ?? "";
     const ogTitle = document.querySelector('meta[property="og:title"]');
     const ogDesc = document.querySelector('meta[property="og:description"]');
+    const prevOgTitle = ogTitle?.getAttribute("content") ?? "";
+    const prevOgDesc = ogDesc?.getAttribute("content") ?? "";
     const twitterTitle = document.querySelector('meta[name="twitter:title"]');
     const twitterDesc = document.querySelector('meta[name="twitter:description"]');
+    const prevTwitterTitle = twitterTitle?.getAttribute("content") ?? "";
+    const prevTwitterDesc = twitterDesc?.getAttribute("content") ?? "";
     const metaKeywords = document.querySelector('meta[name="keywords"]');
     const prevKeywords = metaKeywords?.getAttribute("content") ?? "";
 
@@ -43,10 +47,10 @@ const usePageMeta = ({ title, description, canonicalPath, keywords }: PageMetaOp
     return () => {
       document.title = prevTitle;
       metaDesc?.setAttribute("content", prevDesc);
-      ogTitle?.setAttribute("content", prevTitle);
-      ogDesc?.setAttribute("content", prevDesc);
-      twitterTitle?.setAttribute("content", prevTitle);
-      twitterDesc?.setAttribute("content", prevDesc);
+      ogTitle?.setAttribute("content", prevOgTitle);
+      ogDesc?.setAttribute("content", prevOgDesc);
+      twitterTitle?.setAttribute("content", prevTwitterTitle);
+      twitterDesc?.setAttribute("content", prevTwitterDesc);
       if (keywords && metaKeywords) metaKeywords.setAttribute("content", prevKeywords);
       if (canonical) {
         if (prevCanonical) {

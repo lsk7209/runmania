@@ -13,9 +13,10 @@ export interface SitemapEntry {
 
 export const staticPages: SitemapEntry[] = [
   { path: "/", changefreq: "weekly", priority: 1.0 },
-  { path: "/diagnosis", changefreq: "monthly", priority: 0.9 },
+  { path: "/tools/diagnosis", changefreq: "monthly", priority: 0.9 },
   { path: "/blog", changefreq: "weekly", priority: 0.8 },
   { path: "/reviews", changefreq: "weekly", priority: 0.6 },
+  { path: "/tools", changefreq: "monthly", priority: 0.6 },
   { path: "/tools/pace-calculator", changefreq: "monthly", priority: 0.5 },
   { path: "/tools/size-converter", changefreq: "monthly", priority: 0.5 },
 ];

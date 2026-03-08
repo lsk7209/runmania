@@ -2,9 +2,16 @@ import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Footprints, Home, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import usePageMeta from "@/hooks/usePageMeta";
 
 const NotFound = () => {
   const location = useLocation();
+
+  usePageMeta({
+    title: "페이지를 찾을 수 없습니다 (404) | 런닝화매니아",
+    description: "요청하신 페이지가 존재하지 않거나 이동되었습니다. 런닝화매니아 홈으로 돌아가세요.",
+    canonicalPath: "/",
+  });
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
@@ -26,7 +33,7 @@ const NotFound = () => {
               홈으로 돌아가기
             </Button>
           </Link>
-          <Link to="/diagnosis">
+          <Link to="/tools/diagnosis">
             <Button className="gap-2 rounded-xl bg-primary text-primary-foreground">
               <Stethoscope className="h-4 w-4" />
               무료 발 진단 받기

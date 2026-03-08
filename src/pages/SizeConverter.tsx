@@ -127,11 +127,10 @@ const SizeConverter = () => {
                     setFromRegion(r.key);
                     setInputVal("");
                   }}
-                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
-                    fromRegion === r.key
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all ${fromRegion === r.key
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-secondary text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   {r.short}
                 </button>
@@ -151,7 +150,7 @@ const SizeConverter = () => {
                 className="w-28 border-border bg-secondary text-center text-lg font-mono"
               />
               <span className="text-sm text-muted-foreground">
-                {fromRegion === "KR" ? "mm" : fromRegion}
+                {fromRegion === "KR" ? "mm" : regions.find((r) => r.key === fromRegion)?.short ?? fromRegion}
               </span>
             </div>
 
@@ -187,19 +186,17 @@ const SizeConverter = () => {
                 return (
                   <div
                     key={r.key}
-                    className={`flex items-center justify-between rounded-xl border p-4 ${
-                      isFrom
+                    className={`flex items-center justify-between rounded-xl border p-4 ${isFrom
                         ? "border-primary/30 bg-primary/5"
                         : "border-border bg-card"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className={`flex h-10 min-w-[56px] items-center justify-center rounded-lg text-xs font-bold ${
-                          isFrom
+                        className={`flex h-10 min-w-[56px] items-center justify-center rounded-lg text-xs font-bold ${isFrom
                             ? "bg-primary/10 text-primary"
                             : "bg-secondary text-muted-foreground"
-                        }`}
+                          }`}
                       >
                         {r.short}
                       </span>
@@ -249,7 +246,7 @@ const SizeConverter = () => {
             <Footprints className="mx-auto mb-3 h-6 w-6 text-primary" />
             <p className="mb-1 text-sm font-medium">내 발에 맞는 러닝화가 궁금하다면?</p>
             <p className="mb-4 text-xs text-muted-foreground">발 진단으로 최적의 신발을 찾아보세요</p>
-            <Link to="/diagnosis">
+            <Link to="/tools/diagnosis">
               <Button className="gap-2 rounded-xl bg-primary text-primary-foreground neon-border">
                 무료 발 진단 받기
                 <ArrowRight className="h-3.5 w-3.5" />

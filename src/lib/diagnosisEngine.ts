@@ -18,6 +18,7 @@ interface UserProfile {
   isHighArch: boolean;
   isOverweight: boolean;
   isAdvanced: boolean;
+  isIntermediate: boolean;
   isBeginner: boolean;
   hasKneePain: boolean;
   hasAnklePain: boolean;
@@ -42,6 +43,7 @@ function buildProfile(answers: UserAnswers): UserProfile {
     isHighArch: answers.q3Arch === "high",
     isOverweight: answers.q4Weight === "heavy",
     isAdvanced: answers.q5Level === "advanced",
+    isIntermediate: answers.q5Level === "intermediate",
     isBeginner: answers.q5Level === "beginner",
     hasKneePain: answers.q6Pain === "knee",
     hasAnklePain: answers.q6Pain === "ankle",
@@ -53,20 +55,35 @@ function buildProfile(answers: UserAnswers): UserProfile {
 
 function scoreShoe(shoe: Shoe, profile: UserProfile): number {
   let score = 0;
+
+  // Ban rules (early return)
   if (profile.isWideFoot && shoe.banFor.includes("wide-foot")) return -100;
   if (profile.isFlatFoot && shoe.banFor.includes("flat-foot")) return -100;
+  if (profile.isHighArch && shoe.banFor.includes("high-arch")) return -100;
   if (profile.isBeginner && shoe.banFor.includes("beginner")) return -50;
 
+  // bestFor scoring
   if (profile.isWideFoot && shoe.bestFor.includes("wide-foot")) score += 30;
   if (profile.isFlatFoot && shoe.bestFor.includes("flat-foot")) score += 25;
+  if (profile.isHighArch && shoe.bestFor.includes("high-arch")) score += 25;
+  if (profile.isNarrowFoot && shoe.bestFor.includes("narrow-foot")) score += 20;
   if (profile.hasAnklePain && shoe.bestFor.includes("ankle-pain")) score += 25;
   if (profile.isOverweight && shoe.bestFor.includes("overweight")) score += 20;
   if (profile.hasKneePain && shoe.bestFor.includes("knee-pain")) score += 20;
   if (profile.hasSolePain && shoe.bestFor.includes("sole-pain")) score += 15;
   if (profile.isAdvanced && shoe.bestFor.includes("advanced")) score += 20;
+  if (profile.isIntermediate && shoe.bestFor.includes("intermediate")) score += 10;
   if (profile.isBeginner && shoe.bestFor.includes("beginner")) score += 15;
   if (profile.wantsSoftCushion && shoe.bestFor.includes("soft-cushion")) score += 10;
   if (profile.wantsBouncyCushion && shoe.bestFor.includes("bouncy-cushion")) score += 10;
+
+  // Dead tag scoring: overpronation → flat foot association, speed → advanced
+  if (profile.isFlatFoot && shoe.bestFor.includes("overpronation")) score += 15;
+  if (profile.isAdvanced && shoe.bestFor.includes("speed")) score += 15;
+
+  // Baseline scoring for normal/neutral profiles: daily trainers and versatile shoes
+  if (shoe.type === "cushion" || shoe.type === "neutral") score += 5;
+
   return score;
 }
 

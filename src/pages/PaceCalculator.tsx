@@ -15,24 +15,28 @@ const distances = [
 
 const presets = [
   { label: "입문 (7:00)", pace: 420 },
+  { label: "서브5 (7:06)", pace: 426 },
   { label: "취미 (6:00)", pace: 360 },
   { label: "중급 (5:30)", pace: 330 },
   { label: "서브4 (5:41)", pace: 341 },
   { label: "서브3:30 (4:58)", pace: 298 },
+  { label: "서브3 (4:15)", pace: 255 },
   { label: "엘리트 (3:30)", pace: 210 },
 ];
 
 function formatTime(totalSeconds: number): string {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = Math.round(totalSeconds % 60);
+  const total = Math.round(totalSeconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
   if (h > 0) return `${h}시간 ${m.toString().padStart(2, "0")}분 ${s.toString().padStart(2, "0")}초`;
   return `${m}분 ${s.toString().padStart(2, "0")}초`;
 }
 
 function formatPace(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
+  const total = Math.round(seconds);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}'${s.toString().padStart(2, "0")}"`;
 }
 
@@ -56,7 +60,7 @@ const PaceCalculator = () => {
   const [targetDist, setTargetDist] = useState(42.195);
   const [mode, setMode] = useState<"pace-to-time" | "time-to-pace">("pace-to-time");
 
-  const paceSeconds = (parseInt(paceMin) || 0) * 60 + (parseInt(paceSec) || 0);
+  const paceSeconds = (parseInt(paceMin) || 0) * 60 + Math.min(59, Math.max(0, parseInt(paceSec) || 0));
 
   const finishResults = useMemo(() => {
     if (mode !== "pace-to-time" || paceSeconds <= 0) return [];
@@ -69,7 +73,7 @@ const PaceCalculator = () => {
 
   const calculatedPace = useMemo(() => {
     if (mode !== "time-to-pace") return null;
-    const totalSec = (parseInt(finishH) || 0) * 3600 + (parseInt(finishM) || 0) * 60 + (parseInt(finishS) || 0);
+    const totalSec = (parseInt(finishH) || 0) * 3600 + (parseInt(finishM) || 0) * 60 + Math.min(59, Math.max(0, parseInt(finishS) || 0));
     if (totalSec <= 0 || targetDist <= 0) return null;
     const pace = totalSec / targetDist;
     return { pace, formatted: formatPace(pace), speed: paceToSpeed(pace) };
@@ -107,22 +111,20 @@ const PaceCalculator = () => {
           <div className="mb-6 flex rounded-xl border border-border bg-secondary p-1">
             <button
               onClick={() => setMode("pace-to-time")}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
-                mode === "pace-to-time"
+              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${mode === "pace-to-time"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               <Timer className="mr-1.5 inline h-3.5 w-3.5" />
               페이스 → 완주시간
             </button>
             <button
               onClick={() => setMode("time-to-pace")}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
-                mode === "time-to-pace"
+              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${mode === "time-to-pace"
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               <Route className="mr-1.5 inline h-3.5 w-3.5" />
               완주시간 → 페이스
@@ -185,19 +187,17 @@ const PaceCalculator = () => {
                   {finishResults.map((r) => (
                     <div
                       key={r.label}
-                      className={`flex items-center justify-between rounded-xl border p-4 ${
-                        r.km === 42.195
+                      className={`flex items-center justify-between rounded-xl border p-4 ${r.km === 42.195
                           ? "border-primary/30 bg-primary/5"
                           : "border-border bg-card"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-3">
                         <span
-                          className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold ${
-                            r.km === 42.195
+                          className={`flex h-10 w-10 items-center justify-center rounded-lg text-xs font-bold ${r.km === 42.195
                               ? "bg-primary/10 text-primary"
                               : "bg-secondary text-muted-foreground"
-                          }`}
+                            }`}
                         >
                           {r.label}
                         </span>
@@ -225,11 +225,10 @@ const PaceCalculator = () => {
                     <button
                       key={d.label}
                       onClick={() => setTargetDist(d.km)}
-                      className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-all ${
-                        targetDist === d.km
+                      className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-all ${targetDist === d.km
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border bg-secondary text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       {d.label}
                     </button>
@@ -306,7 +305,7 @@ const PaceCalculator = () => {
             <Zap className="mx-auto mb-3 h-6 w-6 text-primary" />
             <p className="mb-1 text-sm font-medium">페이스에 맞는 러닝화가 궁금하다면?</p>
             <p className="mb-4 text-xs text-muted-foreground">발 진단으로 최적의 신발을 찾아보세요</p>
-            <Link to="/diagnosis">
+            <Link to="/tools/diagnosis">
               <Button className="gap-2 rounded-xl bg-primary text-primary-foreground neon-border">
                 무료 발 진단 받기
                 <ArrowRight className="h-3.5 w-3.5" />

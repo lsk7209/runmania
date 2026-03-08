@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Footprints, ArrowRight, Activity, BookOpen, Star, Zap,
-  AlertTriangle, Shield, TrendingUp, Ruler
+  AlertTriangle, Shield, Ruler
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -19,7 +19,7 @@ const toolCards = [
     icon: <Footprints className="h-6 w-6" />,
     title: "러닝화 처방 진단",
     description: "7개 질문으로 내 발에 맞는 신발과 절대 신으면 안 되는 신발을 분석합니다.",
-    link: "/diagnosis",
+    link: "/tools/diagnosis",
     cta: "진단 시작하기",
     badge: "인기",
   },
@@ -67,21 +67,21 @@ const blogPosts = [
 
 const reviewHighlights = [
   {
-    slug: "asics-kayano-30",
+    slug: "아식스-젤카야노-30",
     name: "아식스 젤카야노 30",
     rating: 4.5,
     oneLiner: "편평족의 구원자. 안정성 최강.",
     tag: "안정화",
   },
   {
-    slug: "nb-fresh-foam-1080",
+    slug: "뉴발란스-프레시폼-1080-v13-2e",
     name: "뉴발란스 1080 v13",
     rating: 4.3,
     oneLiner: "넓은 발볼 + 푹신한 쿠셔닝의 정석.",
     tag: "쿠셔닝",
   },
   {
-    slug: "hoka-bondi-8",
+    slug: "호카-본디-8",
     name: "호카 본디 8",
     rating: 4.4,
     oneLiner: "무릎 보호 맥시멀 쿠셔닝.",
@@ -116,17 +116,22 @@ const Home = () => {
         },
       ],
     };
+    const scriptId = "home-jsonld";
+    const existing = document.getElementById(scriptId);
+    if (existing) existing.remove();
     const script = document.createElement("script");
+    script.id = scriptId;
     script.type = "application/ld+json";
     script.textContent = JSON.stringify(jsonLd);
     document.head.appendChild(script);
     return () => {
-      document.head.removeChild(script);
+      const el = document.getElementById(scriptId);
+      if (el) el.remove();
     };
   }, []);
 
   return (
-    <div className="min-h-screen pt-14">
+    <main className="min-h-screen pt-14">
       {/* Hero */}
       <section className="relative overflow-hidden px-4 py-20 sm:py-28">
         <div className="scan-line pointer-events-none absolute inset-0 z-0" />
@@ -163,7 +168,7 @@ const Home = () => {
           </p>
 
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link to="/diagnosis">
+            <Link to="/tools/diagnosis">
               <Button
                 size="lg"
                 className="group gap-2 rounded-xl bg-primary px-8 py-6 text-base font-semibold text-primary-foreground neon-border transition-all hover:neon-border-strong"
@@ -333,7 +338,7 @@ const Home = () => {
             <p className="mb-6 text-sm text-muted-foreground">
               3분 진단으로 내 발에 맞는 신발을 찾고, 위험한 신발을 피하세요.
             </p>
-            <Link to="/diagnosis">
+            <Link to="/tools/diagnosis">
               <Button className="gap-2 rounded-xl bg-primary px-8 py-5 text-primary-foreground neon-border">
                 <Shield className="h-4 w-4" />
                 무료 진단 받기
@@ -355,7 +360,7 @@ const Home = () => {
           </p>
         </div>
       </footer>
-    </div>
+    </main>
   );
 };
 

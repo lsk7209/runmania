@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Clock, Tag, List, CheckCircle2, TrendingUp, Share2, Link as LinkIcon, Info, AlertTriangle, Lightbulb, Quote, Swords, HelpCircle } from "lucide-react";
+import usePageMeta from "@/hooks/usePageMeta";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1234,6 +1235,12 @@ const POST_CATEGORY: Record<string, CategoryKey> = {
 /* ─── Blog List ─── */
 
 const BlogList = () => {
+  usePageMeta({
+    title: "러닝화 블로그 | 런닝화매니아",
+    description: "발 건강과 러닝화에 대한 깊이 있는 분석. 초보 가이드, 부상 예방, 브랜드 비교까지.",
+    canonicalPath: "/blog",
+    keywords: "러닝화 블로그, 러닝화 추천, 발 건강, 러닝 부상 예방",
+  });
   const [activeCategory, setActiveCategory] = useState<CategoryKey>("all");
   const { posts, loading } = useBlogPosts();
 
@@ -1288,8 +1295,8 @@ const BlogList = () => {
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${activeCategory === cat.key
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                ? "bg-primary text-primary-foreground shadow-md"
+                : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                 }`}
             >
               {cat.label}
@@ -1648,7 +1655,7 @@ const BlogDetail = ({ slug }: { slug: string }) => {
           {/* CTA at end */}
           <div className="mt-12 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center">
             <p className="mb-3 text-sm font-medium">내 발에 맞는 신발이 궁금하다면?</p>
-            <Link to="/diagnosis">
+            <Link to="/tools/diagnosis">
               <button className="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground neon-border">
                 무료 진단 받기 →
               </button>
