@@ -10,6 +10,11 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   related_slugs TEXT NOT NULL DEFAULT '[]',
   faq           TEXT NOT NULL DEFAULT '[]',
   status        TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'published')),
+  content_type  TEXT NOT NULL DEFAULT 'blog',
+  workflow_status TEXT NOT NULL DEFAULT 'idea',
+  generation_meta TEXT NOT NULL DEFAULT '{}',
+  last_generated_at TEXT,
+  generation_count INTEGER NOT NULL DEFAULT 0,
   scheduled_at  TEXT,
   published_at  TEXT,
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
@@ -28,6 +33,19 @@ CREATE TABLE IF NOT EXISTS app_settings (
   publish_interval_hours INTEGER NOT NULL DEFAULT 24,
   auto_publish_enabled   INTEGER NOT NULL DEFAULT 1,
   updated_at             TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS content_generation_logs (
+  id               TEXT PRIMARY KEY,
+  post_id          TEXT NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'requested',
+  content_type     TEXT,
+  workflow_status  TEXT,
+  requested_prompt TEXT NOT NULL DEFAULT '{}',
+  generated_title  TEXT,
+  error_message    TEXT,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  completed_at     TEXT
 );
 
 INSERT OR IGNORE INTO app_settings (id) VALUES (1);

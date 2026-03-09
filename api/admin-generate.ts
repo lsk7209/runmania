@@ -1,125 +1,325 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { tursoClient } from "./db.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { ensureContentSchema, tursoClient } from "./db.js";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+type NormalizedGenerationMeta = {
+  template: string;
+  targetAudience: string;
+  tone: string;
+  length: "short" | "medium" | "long";
+  seoKeywords: string[];
+  cta: string;
+  contentType: "blog" | "review" | "utility";
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const { password, postId, options } = req.body || {};
+  const envPass = (ADMIN_PASSWORD || "").trim();
+  const inputPass = (password || "").trim();
+
+  if (!envPass) {
+    return res.status(500).json({ error: "ADMIN_PASSWORD is not configured" });
+  }
+
+  if (inputPass !== envPass) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (!postId) {
+    return res.status(400).json({ error: "postId is required" });
+  }
+
+  const geminiApiKey = (process.env.GEMINI_API_KEY || "").trim();
+  if (!geminiApiKey) {
+    return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+  }
+
+  let logId = crypto.randomUUID();
+
+  try {
+    await ensureContentSchema();
+
+    const resultPost = await tursoClient.execute({
+      sql: "SELECT * FROM blog_posts WHERE id = ?",
+      args: [postId],
+    });
+
+    if (resultPost.rows.length === 0) {
+      return res.status(404).json({ error: "Post not found" });
     }
 
-    const { password, postId } = req.body || {};
+    const post = resultPost.rows[0] as any;
+    const existingMeta = tryParse(post.generation_meta) || {};
+    const generationMeta = normalizeGenerationMeta({ ...existingMeta, ...(options || {}) });
+    const contentType = post.content_type || generationMeta.contentType || "blog";
 
-    // Fallback if Vercel Environment Variables aren't loaded properly
-    const envPass = (ADMIN_PASSWORD || "admin1234").trim();
-    const inputPass = (password || "").trim();
+    await tursoClient.execute({
+      sql: `INSERT INTO content_generation_logs
+        (id, post_id, status, content_type, workflow_status, requested_prompt, created_at)
+        VALUES (?, ?, 'requested', ?, ?, ?, CURRENT_TIMESTAMP)`,
+      args: [
+        logId,
+        postId,
+        contentType,
+        post.workflow_status || "idea",
+        JSON.stringify(generationMeta),
+      ],
+    });
 
-    if (!envPass || inputPass !== envPass) {
-        return res.status(401).json({ error: "Unauthorized" });
-    }
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const prompt = buildPrompt({
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      contentType,
+      generationMeta,
+    });
 
-    if (!postId) {
-        return res.status(400).json({ error: "postId is required" });
-    }
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    const cleanText = stripJsonCodeBlock(text);
+    const parsedContent = validateGeneratedPayload(JSON.parse(cleanText));
 
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
-    }
+    const mergedMeta = {
+      ...generationMeta,
+      lastPromptAt: new Date().toISOString(),
+    };
+
+    await tursoClient.execute({
+      sql: `UPDATE blog_posts SET
+        title=?, excerpt=?, content=?, tags=?, read_time=?, hero_image=?, faq=?,
+        content_type=?, workflow_status='reviewing', generation_meta=?, last_generated_at=CURRENT_TIMESTAMP,
+        generation_count=COALESCE(generation_count, 0) + 1, updated_at=CURRENT_TIMESTAMP
+        WHERE id=?`,
+      args: [
+        parsedContent.title || post.title,
+        parsedContent.excerpt,
+        JSON.stringify(parsedContent.content),
+        JSON.stringify(parsedContent.tags),
+        parsedContent.read_time,
+        parsedContent.hero_image,
+        JSON.stringify(parsedContent.faq),
+        contentType,
+        JSON.stringify(mergedMeta),
+        postId,
+      ],
+    });
+
+    await tursoClient.execute({
+      sql: `UPDATE content_generation_logs
+        SET status='completed', workflow_status='reviewing', generated_title=?, completed_at=CURRENT_TIMESTAMP
+        WHERE id=?`,
+      args: [parsedContent.title || post.title, logId],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Content generated and saved for review.",
+      postId,
+    });
+  } catch (error: any) {
+    console.error("[admin-generate] Error generating content:", error);
 
     try {
-        // Fetch the draft post
-        const resultPost = await tursoClient.execute({
-            sql: "SELECT * FROM blog_posts WHERE id = ?",
-            args: [postId]
-        });
+      await ensureContentSchema();
+      await tursoClient.execute({
+        sql: `UPDATE content_generation_logs
+          SET status='failed', error_message=?, completed_at=CURRENT_TIMESTAMP
+          WHERE id=?`,
+        args: [error.message || "Failed to generate content", logId],
+      });
+    } catch (logError) {
+      console.error("[admin-generate] Failed to save generation log:", logError);
+    }
 
-        if (resultPost.rows.length === 0) {
-            return res.status(404).json({ error: "Post not found" });
-        }
+    return res.status(500).json({ error: error.message || "Failed to generate content" });
+  }
+}
 
-        const post = resultPost.rows[0] as any;
-        const topic = post.title;
+function buildPrompt(input: {
+  title: string;
+  slug: string;
+  excerpt?: string;
+  contentType: string;
+  generationMeta: NormalizedGenerationMeta;
+}) {
+  const { title, slug, excerpt, contentType, generationMeta } = input;
+  const keywordText = generationMeta.seoKeywords.join(", ");
+  const minimumBlocks =
+    generationMeta.length === "short" ? 10 : generationMeta.length === "long" ? 18 : 14;
 
-        // Init Gemini
-        const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+  return `
+You are an expert Korean content strategist and editor for a running shoe website.
+Write production-ready content in Korean for direct use by a human editor.
 
-        const prompt = `
-당신은 한국 최고의 러닝화 및 마라톤 전문가입니다. 
-다음 주제(제목)로 전문적이고 SEO에 최적화된 블로그 글을 작성해 주세요.
-주제: "${topic}"
+Post context
+- Title: ${title}
+- Slug: ${slug}
+- Existing excerpt: ${excerpt || "none"}
+- Content type: ${contentType}
+- Template: ${generationMeta.template}
+- Target audience: ${generationMeta.targetAudience || "general runners"}
+- Tone: ${generationMeta.tone}
+- Length: ${generationMeta.length}
+- SEO keywords: ${keywordText || "none"}
+- CTA: ${generationMeta.cta || "none"}
 
-응답은 반드시 유효한 JSON 형식으로 출력해야 합니다. 마크다운 코드 블록(\`\`\`json ... \`\`\`)을 포함하지 말고 순수 JSON 객체만 반환하세요.
-JSON 구조는 다음과 같아야 합니다:
+Content-type guidance
+${getContentRules(contentType, generationMeta.template)}
+
+Return valid JSON only. Do not wrap your answer in markdown.
+Use exactly this schema:
 {
-  "excerpt": "글의 요약 (1~2문장)",
+  "title": "최종 제목",
+  "excerpt": "1~2문장 요약",
   "content": [
-    "첫 번째 문단...",
-    "## 소제목 1",
-    "[HIGHLIGHT]중요한 내용 강조[/HIGHLIGHT]",
-    "문단 내용...",
-    "[TABLE]컬럼1|컬럼2\\n값1|값2[/TABLE]",
-    "[WARNING]경고 내용[/WARNING]",
-    "[TIP]팁 내용[/TIP]",
-    "[CHECKLIST]체크리스트 내용 1\\n체크리스트 내용 2[/CHECKLIST]"
+    "본문 단락",
+    "## 소제목",
+    "[TIP]실용 팁[/TIP]",
+    "[CHECKLIST]항목 1\\n항목 2[/CHECKLIST]",
+    "[TABLE]항목|설명\\n예시|값[/TABLE]"
   ],
   "tags": ["태그1", "태그2", "태그3"],
-  "read_time": "10분",
+  "read_time": "8분",
   "hero_image": "/assets/shoes/nb-1080.png",
   "faq": [
-    { "question": "질문 1?", "answer": "답변 1" },
-    { "question": "질문 2?", "answer": "답변 2" }
+    { "question": "질문", "answer": "답변" }
   ]
 }
 
-주의사항:
-1. content 배열은 각 문단, 소제목, 특별 요소들을 각각의 문자열로 분리해야 합니다.
-2. hero_image는 다음 중 하나를 선택하세요: "/assets/shoes/nb-1080.png", "/assets/shoes/nb-more.png", "/assets/shoes/asics-kayano.png", "/assets/shoes/hoka-bondi.png", "/assets/shoes/nike-pegasus.png", "/assets/shoes/saucony-speed.png"
-3. 글의 길이는 최소 10개의 content 블록 이상으로 상세하고 매우 전문적으로 작성해 주세요.
+Hard rules
+1. content length must be at least ${minimumBlocks} blocks.
+2. The article must be specific, useful, and factually cautious.
+3. Keep SEO keywords natural. Do not keyword-stuff.
+4. FAQ must contain 3 to 5 items.
+5. Choose hero_image from only these values:
+   /assets/shoes/nb-1080.png
+   /assets/shoes/nb-more.png
+   /assets/shoes/asics-kayano.png
+   /assets/shoes/hoka-bondi.png
+   /assets/shoes/nike-pegasus.png
+   /assets/shoes/saucony-speed.png
+6. The output must be safe for human review before publication.
 `;
+}
 
-        const result = await model.generateContent(prompt);
-        const text = result.response.text();
+function getContentRules(contentType: string, template: string) {
+  if (contentType === "review") {
+    return `
+- This is a shoe review. Cover fit, cushioning, stability, ride feel, strengths, weaknesses, and ideal users.
+- Add a comparison table if it helps users choose between alternatives.
+- End with a verdict and purchase-fit guidance.
+- Template emphasis: ${template}.`;
+  }
 
-        // Clean up text if it contains markdown JSON blocks
-        let cleanText = text.trim();
-        if (cleanText.startsWith("\`\`\`json")) {
-            cleanText = cleanText.substring(7);
-        } else if (cleanText.startsWith("\`\`\`")) {
-            cleanText = cleanText.substring(3);
-        }
-        if (cleanText.endsWith("\`\`\`")) {
-            cleanText = cleanText.substring(0, cleanText.length - 3);
-        }
+  if (contentType === "utility") {
+    return `
+- This is a utility/help article. Focus on steps, formulas, conversion logic, or practical instructions.
+- Use checklist or table blocks when they improve clarity.
+- Include common mistakes and practical examples.
+- Template emphasis: ${template}.`;
+  }
 
-        const parsedContent = JSON.parse(cleanText);
+  return `
+- This is a blog article. Use a strong search-intent structure with clear sections and practical takeaways.
+- Include one checklist or table block when useful.
+- End with a short CTA section aligned to the provided CTA.
+- Template emphasis: ${template}.`;
+}
 
-        // Update the database
-        await tursoClient.execute({
-            sql: `UPDATE blog_posts SET
-                  excerpt=?, content=?, tags=?, read_time=?, hero_image=?, faq=?, updated_at=CURRENT_TIMESTAMP
-                  WHERE id=?`,
-            args: [
-                parsedContent.excerpt || "",
-                JSON.stringify(parsedContent.content || []),
-                JSON.stringify(parsedContent.tags || []),
-                parsedContent.read_time || "10분",
-                parsedContent.hero_image || "/assets/shoes/nb-1080.png",
-                JSON.stringify(parsedContent.faq || []),
-                postId
-            ]
-        });
+function stripJsonCodeBlock(text: string) {
+  let cleanText = text.trim();
+  if (cleanText.startsWith("```json")) cleanText = cleanText.slice(7);
+  else if (cleanText.startsWith("```")) cleanText = cleanText.slice(3);
+  if (cleanText.endsWith("```")) cleanText = cleanText.slice(0, -3);
+  return cleanText.trim();
+}
 
-        return res.status(200).json({
-            success: true,
-            message: "Content successfully generated and saved.",
-            postId: postId
-        });
+function validateGeneratedPayload(payload: any) {
+  const content = Array.isArray(payload?.content)
+    ? payload.content.map((item: unknown) => String(item).trim()).filter(Boolean)
+    : [];
+  if (content.length < 10) {
+    throw new Error("Generated content is too short");
+  }
 
-    } catch (error: any) {
-        console.error("[admin-generate] Error generating content:", error);
-        return res.status(500).json({ error: error.message || "Failed to generate content" });
-    }
+  const tags = Array.isArray(payload?.tags)
+    ? payload.tags.map((item: unknown) => String(item).trim()).filter(Boolean)
+    : [];
+
+  const faq = Array.isArray(payload?.faq)
+    ? payload.faq
+        .map((item: any) => ({
+          question: String(item?.question || "").trim(),
+          answer: String(item?.answer || "").trim(),
+        }))
+        .filter((item: { question: string; answer: string }) => item.question && item.answer)
+    : [];
+
+  return {
+    title: String(payload?.title || "").trim(),
+    excerpt: String(payload?.excerpt || "").trim(),
+    content,
+    tags,
+    read_time: String(payload?.read_time || estimateReadTime(content)).trim(),
+    hero_image: validateHeroImage(payload?.hero_image),
+    faq,
+  };
+}
+
+function validateHeroImage(value: unknown) {
+  const allowed = new Set([
+    "/assets/shoes/nb-1080.png",
+    "/assets/shoes/nb-more.png",
+    "/assets/shoes/asics-kayano.png",
+    "/assets/shoes/hoka-bondi.png",
+    "/assets/shoes/nike-pegasus.png",
+    "/assets/shoes/saucony-speed.png",
+  ]);
+
+  const candidate = String(value || "");
+  return allowed.has(candidate) ? candidate : "/assets/shoes/nb-1080.png";
+}
+
+function estimateReadTime(content: unknown[]) {
+  const joined = Array.isArray(content) ? content.join(" ") : "";
+  const minutes = Math.max(6, Math.round(joined.length / 250));
+  return `${minutes}분`;
+}
+
+function tryParse(value: unknown) {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeGenerationMeta(meta: any): NormalizedGenerationMeta {
+  const rawLength = String(meta?.length || "medium");
+  const normalizedLength =
+    rawLength === "short" || rawLength === "long" ? rawLength : "medium";
+
+  return {
+    template: meta?.template || "guide",
+    targetAudience: meta?.targetAudience || "",
+    tone: meta?.tone || "expert",
+    length: normalizedLength,
+    seoKeywords: Array.isArray(meta?.seoKeywords)
+      ? meta.seoKeywords.map((item: unknown) => String(item).trim()).filter(Boolean)
+      : String(meta?.seoKeywords || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+    cta: meta?.cta || "",
+    contentType: meta?.contentType || "blog",
+  };
 }

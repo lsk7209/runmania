@@ -54,29 +54,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         if (shouldPublish) {
-            // Find the oldest draft or scheduled post
-            const resultDraft = await tursoClient.execute(
-                "SELECT id, title, slug FROM blog_posts WHERE status IN ('draft', 'scheduled') ORDER BY created_at ASC LIMIT 1"
-            );
+            const nowIso = new Date().toISOString();
+
+            // Scheduled posts are published only after their scheduled time and review approval.
+            const resultScheduled = await tursoClient.execute({
+                sql: `SELECT id, title, slug
+                      FROM blog_posts
+                      WHERE status = 'scheduled'
+                        AND workflow_status = 'approved'
+                        AND scheduled_at IS NOT NULL
+                        AND scheduled_at <= ?
+                      ORDER BY scheduled_at ASC, created_at ASC
+                      LIMIT 1`,
+                args: [nowIso]
+            });
+
+            const resultDraft = resultScheduled.rows.length > 0
+                ? resultScheduled
+                : await tursoClient.execute(
+                    "SELECT id, title, slug FROM blog_posts WHERE status = 'draft' AND workflow_status = 'approved' ORDER BY created_at ASC LIMIT 1"
+                );
 
             if (resultDraft.rows.length > 0) {
                 const draft = resultDraft.rows[0] as any;
 
                 await tursoClient.execute({
-                    sql: `UPDATE blog_posts SET status = 'published', published_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    sql: `UPDATE blog_posts
+                          SET status = 'published',
+                              published_at = CURRENT_TIMESTAMP,
+                              updated_at = CURRENT_TIMESTAMP
+                          WHERE id = ?`,
                     args: [draft.id]
                 });
 
-                console.log(`[Cron] Auto-published post: ${draft.title} (${draft.slug})`);
+                console.log(`[Cron] Auto-published approved post: ${draft.title} (${draft.slug})`);
 
                 return res.status(200).json({
                     success: true,
-                    message: "Successfully auto-published a post",
+                    message: "Successfully auto-published an approved post",
                     publishedPost: draft.slug
                 });
             } else {
-                console.log("[Cron] No draft or scheduled posts available to publish.");
-                return res.status(200).json({ success: true, message: "No posts available to publish" });
+                console.log("[Cron] No approved posts available to publish.");
+                return res.status(200).json({ success: true, message: "No approved posts available to publish" });
             }
         }
     } catch (err: any) {
