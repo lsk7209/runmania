@@ -211,4 +211,224 @@ export const reviewData: Record<string, ReviewContent> = {
       { q: "토린 7과 론 피크의 차이는?", a: "토린은 로드(도로)용, 론 피크는 트레일용입니다. 도심 러닝이면 토린, 산길이나 비포장도로면 론 피크를 선택하세요." },
     ],
   },
+  "ASICS Novablast 5": {
+    pros: ["Energetic rebound", "Smooth daily trainer", "Comfortable forefoot"],
+    cons: ["Not very stable for heavy overpronators", "Upper fit can feel average"],
+    verdict: "A strong all-rounder for runners who want a lively daily trainer without moving to a plated shoe.",
+    rating: 4.4,
+    detailedReview:
+      "ASICS Novablast 5 is built for runners who want bounce without the harshness of an aggressive speed shoe. The midsole feels lively at easy pace and stays useful when the run naturally speeds up.\n\nThe best part of this shoe is its versatility. It works for relaxed daily mileage, steady efforts, and even moderate tempo sessions. The underfoot feel is softer than a traditional trainer but not unstable enough to feel risky for most neutral runners.\n\nThe main limitation is guidance. If you need real stability or if your ankles collapse late in runs, Novablast 5 will not replace a true support shoe. For neutral runners, though, it is one of the easiest shoes to recommend.",
+    idealFor: ["Neutral runners", "Daily training", "Runners who want rebound"],
+    notFor: ["Strong overpronators", "Runners seeking a firm ride"],
+    tips: [
+      "Use it as a main daily trainer and save plated shoes for harder sessions.",
+      "If you are between sizes, check forefoot fit carefully because upper volume is moderate.",
+      "Neutral mechanics will get the best value from this model.",
+    ],
+    faq: [
+      { q: "Is Novablast 5 good for beginners?", a: "Yes. It is lively but still forgiving enough for most beginner neutral runners." },
+      { q: "Can it handle tempo runs?", a: "Yes. It is not a pure speed shoe, but it handles steady and moderate tempo work well." },
+      { q: "Is it stable?", a: "It is stable enough for many neutral runners, but it is not a true support shoe." },
+    ],
+  },
+  "Hoka Clifton 10": {
+    pros: ["Easy comfort", "Smooth rocker", "Good for walking and running"],
+    cons: ["Less exciting rebound", "Can feel ordinary for fast runs"],
+    verdict: "A dependable comfort-focused trainer for runners who value consistency over flashy speed.",
+    rating: 4.2,
+    detailedReview:
+      "Hoka Clifton 10 stays close to the formula that made the line popular: light cushioning, a smooth rocker, and very low drama. This is the type of shoe that disappears on foot, which is a strength for most daily runners.\n\nIt handles easy mileage, commute runs, and long walking days well. The cushioning is comfortable without becoming sloppy, and the transition feels natural even for runners who do not want a heavily plated or highly aggressive shape.\n\nThe weakness is excitement. If you want a shoe that pushes you forward or gives strong rebound, Clifton 10 will feel too calm. But if the goal is reliable daily comfort, it does the job well.",
+    idealFor: ["Beginners", "Easy runs", "Comfort-first runners"],
+    notFor: ["Fast workout focus", "Runners seeking strong rebound"],
+    tips: [
+      "Best used as an easy-day or all-purpose comfort trainer.",
+      "Wide-foot runners should compare standard and wide options if available.",
+      "If you already own a speed shoe, Clifton works well as the calm counterpart.",
+    ],
+    faq: [
+      { q: "Is Clifton 10 good for long runs?", a: "Yes. It is especially good for comfortable long runs at relaxed pace." },
+      { q: "Is it soft or firm?", a: "It leans comfortable and moderately soft, not mushy." },
+      { q: "Can beginners use it as a first shoe?", a: "Yes. It is one of the safer first-shoe options for neutral runners." },
+    ],
+  },
+  "Brooks Ghost 16": {
+    pros: ["Predictable ride", "Wide size options", "Very easy to recommend"],
+    cons: ["Not exciting", "Heel drop may feel high for some runners"],
+    verdict: "A practical and safe neutral trainer that prioritizes consistency over novelty.",
+    rating: 4.1,
+    detailedReview:
+      "Brooks Ghost 16 is the classic neutral daily trainer for runners who want no surprises. The ride is balanced, the platform is stable for a neutral model, and the sizing options are one of its biggest strengths.\n\nThis shoe works well for beginners, heavier runners who still want a neutral shoe, and anyone who values straightforward comfort. It does not feel especially fast, but it does enough things well that it stays useful for a large group of runners.\n\nIf you want bounce or a premium modern foam feel, Ghost 16 may seem plain. If you want a dependable shoe that behaves the same way every day, it is excellent.",
+    idealFor: ["Beginners", "Wide-foot runners", "Steady daily mileage"],
+    notFor: ["Runners chasing bounce", "Minimal-drop preference"],
+    tips: [
+      "A safe default if you are unsure where to start.",
+      "Wide-foot runners should check 2E or 4E options first.",
+      "Pairs well with a separate faster shoe for workouts.",
+    ],
+    faq: [
+      { q: "Is Ghost 16 stable?", a: "For a neutral shoe, yes. It is not a support model, but it feels planted and predictable." },
+      { q: "Is it good for wide feet?", a: "Yes. Its width options are one of its strongest points." },
+      { q: "Can it be a one-shoe rotation?", a: "Yes. For many runners it works well as a single daily trainer." },
+    ],
+  },
+  "Saucony Triumph 22": {
+    pros: ["Plush long-run comfort", "Premium foam feel", "Strong recovery-run option"],
+    cons: ["Not very nimble", "Heavier than tempo-focused trainers"],
+    verdict: "A comfort-heavy long-run shoe for runners who want softness and protection over speed.",
+    rating: 4.5,
+    detailedReview:
+      "Saucony Triumph 22 leans into premium comfort. The foam volume is generous, the underfoot feel is protective, and the overall experience is built around smooth easy mileage rather than aggressive pace work.\n\nIt shines on recovery days and long aerobic runs. When your legs are tired and you still need volume, this is the kind of shoe that reduces harshness and keeps the run manageable.\n\nThe tradeoff is agility. It is not the shoe you pick when you want sharp turnover. For runners who care more about comfort and durability, that trade is usually worth it.",
+    idealFor: ["Long runs", "Recovery runs", "Runners wanting plush cushioning"],
+    notFor: ["Track work", "Runners wanting a light shoe"],
+    tips: [
+      "Use it on high-fatigue days when your legs need protection.",
+      "It works especially well as a long-run complement to a lighter trainer.",
+      "Do not expect race-day sharpness from this model.",
+    ],
+    faq: [
+      { q: "Is Triumph 22 good for long runs?", a: "Yes. Long aerobic mileage is one of its best use cases." },
+      { q: "Is it too soft?", a: "For some runners it may feel very plush, but many will find it controlled enough for easy running." },
+      { q: "Can beginners use it?", a: "Yes, especially if they value comfort and do not mind a slightly heavier shoe." },
+    ],
+  },
+  "Nike Invincible 3": {
+    pros: ["Very soft underfoot", "Excellent impact protection", "Easy-day comfort"],
+    cons: ["Can feel unstable", "Fit is not ideal for every foot"],
+    verdict: "A max-soft option for runners who want easy-run comfort and are willing to manage some instability.",
+    rating: 4.1,
+    detailedReview:
+      "Nike Invincible 3 is all about softness. The ZoomX feel is highly cushioned and very forgiving on tired legs, which makes this shoe appealing for easy days and runners who want maximum impact reduction.\n\nWhere it becomes more complicated is stability. The soft platform can feel less controlled than support-minded or more grounded trainers, especially for runners who roll inward or get sloppy late in runs.\n\nIf your mechanics are reasonably neutral and you love soft cushioning, Invincible 3 is enjoyable. If you need a very planted platform, there are safer options.",
+    idealFor: ["Easy runs", "Heavier runners", "Soft-cushion fans"],
+    notFor: ["Runners needing support", "Wide-foot runners with fit issues"],
+    tips: [
+      "Best used for easy and recovery days rather than fast sessions.",
+      "Check heel security carefully because fit feel varies.",
+      "If stability matters a lot, compare it with a more structured max-cushion shoe.",
+    ],
+    faq: [
+      { q: "Is Invincible 3 stable?", a: "It is stable enough for some neutral runners, but it is not a support-first model." },
+      { q: "Is it good for recovery runs?", a: "Yes. Recovery running is one of its strongest use cases." },
+      { q: "Can beginners use it?", a: "Yes, but beginners who need more support should compare other options." },
+    ],
+  },
+  "Puma Deviate Nitro 3": {
+    pros: ["Versatile plated ride", "Good value", "Useful for tempo and race prep"],
+    cons: ["Not as smooth as top-tier supershoes", "Upper fit may feel narrow"],
+    verdict: "A practical plated trainer for runners who want speed-oriented value without paying supershoe prices.",
+    rating: 4.3,
+    detailedReview:
+      "Puma Deviate Nitro 3 sits in a useful middle ground. It gives you a plated feel and a faster ride, but it remains manageable enough for training rather than feeling like a one-purpose race shoe.\n\nThat makes it attractive for tempo runs, progression runs, and runners who want one faster shoe that can still survive regular use. It does not reach the raw efficiency of elite supershoes, but it costs less and asks less adaptation from the runner.\n\nIf you want a versatile plated option rather than a pure race-only weapon, this is one of the better choices.",
+    idealFor: ["Tempo runs", "Runners wanting a plated trainer", "Value-focused speed work"],
+    notFor: ["Very wide feet", "Runners expecting supershoe softness"],
+    tips: [
+      "Works best as a workout and event shoe paired with a softer daily trainer.",
+      "If fit is borderline, check forefoot width before committing.",
+      "Use it for threshold and progression runs to get the most value.",
+    ],
+    faq: [
+      { q: "Is Deviate Nitro 3 a race shoe?", a: "It can race, but it is best described as a versatile plated trainer." },
+      { q: "Can beginners use it?", a: "Yes, but beginners do not need it as a first shoe." },
+      { q: "Is it good value?", a: "Yes. Value is one of its strongest selling points." },
+    ],
+  },
+  "Mizuno Wave Rider 28": {
+    pros: ["Stable feeling ride", "Consistent turnover", "Good durability"],
+    cons: ["Firmer than many modern trainers", "Less bounce than premium foams"],
+    verdict: "A controlled trainer for runners who prefer structure and consistency over softness.",
+    rating: 4.0,
+    detailedReview:
+      "Mizuno Wave Rider 28 is for runners who still like a firmer and more controlled road feel. It does not chase the softest cushioning trend and that is exactly why some runners keep coming back to it.\n\nThe platform feels steady, transitions are clean, and the shoe rewards runners who want a direct connection to the ground without moving into minimal territory. Durability is also one of the reasons this line stays relevant.\n\nIf you love soft premium foam, this shoe may feel old-school. If you want crisp and dependable, it still makes a lot of sense.",
+    idealFor: ["Runners preferring firmer shoes", "Daily mileage", "Stable-feel neutral runners"],
+    notFor: ["Soft-cushion lovers", "Runners wanting high rebound"],
+    tips: [
+      "A good choice if many soft trainers feel sloppy to you.",
+      "Works well as a winter or bad-weather training shoe because of its predictable ride.",
+      "Compare with Ghost if you want a similar practical trainer with a different feel.",
+    ],
+    faq: [
+      { q: "Is Wave Rider 28 soft?", a: "Not especially. It leans more controlled and moderately firm." },
+      { q: "Is it durable?", a: "Yes. Durability is one of the line's stronger points." },
+      { q: "Who should avoid it?", a: "Runners who want very soft landings or a trampoline-like ride." },
+    ],
+  },
+  "On Cloudmonster 2": {
+    pros: ["Distinct rocker feel", "Bouncy for a max shoe", "Good for long steady runs"],
+    cons: ["Price is high", "Ride feel is not for everyone"],
+    verdict: "A premium max-cushion option with a firmer bounce and unique rocker character.",
+    rating: 4.2,
+    detailedReview:
+      "On Cloudmonster 2 stands out because it does not feel like a typical soft max-cushion shoe. It gives more pop and rocker-driven momentum, which some runners will love and others will find too artificial.\n\nFor long steady mileage, it can feel efficient and surprisingly lively. It is also better for runners who dislike mushy max-cushion shoes but still want stack height and protection.\n\nThe obvious drawback is price. You need to like the ride character enough to justify paying for it, because there are cheaper shoes that deliver more conventional comfort.",
+    idealFor: ["Long runs", "Runners who want bounce with stack", "Premium buyers"],
+    notFor: ["Budget-focused runners", "People wanting very soft cushioning"],
+    tips: [
+      "Try it if traditional max-cushion shoes feel too dead or too soft.",
+      "Best appreciated on long steady road runs.",
+      "Make sure the rocker geometry feels natural for your gait before buying.",
+    ],
+    faq: [
+      { q: "Is Cloudmonster 2 soft?", a: "It is cushioned, but it feels firmer and bouncier than many max-cushion rivals." },
+      { q: "Is it worth the price?", a: "Only if you specifically like the On ride style and rocker feel." },
+      { q: "Can it be a daily trainer?", a: "Yes, especially for runners who like a premium, energetic long-run shoe." },
+    ],
+  },
+  "New Balance FuelCell Rebel v4": {
+    pros: ["Very light", "Fun and flexible", "Fast feeling without a plate"],
+    cons: ["Not the most stable", "Can feel too loose for some runners"],
+    verdict: "A highly enjoyable lightweight trainer for runners who want speed feel without plated stiffness.",
+    rating: 4.4,
+    detailedReview:
+      "New Balance FuelCell Rebel v4 is one of the most fun non-plated trainers in this segment. It feels light, quick, and flexible enough to make moderate pace work feel easy.\n\nThat makes it appealing for runners who do not enjoy plated shoes or who want a more natural-feeling fast trainer. It works well for steady progression runs, shorter tempos, and daily miles when you want some energy underfoot.\n\nThe downside is control. It is not the shoe to pick if you need structure, and some runners may want a more secure upper. For neutral runners who value fun, it is excellent.",
+    idealFor: ["Tempo runs", "Lightweight trainer fans", "Neutral runners"],
+    notFor: ["Runners needing stability", "Heavy heel strikers wanting structure"],
+    tips: [
+      "Great companion to a more cushioned long-run shoe.",
+      "Use it when you want a quick feel without jumping into plated geometry.",
+      "Neutral runners will get the best experience.",
+    ],
+    faq: [
+      { q: "Is Rebel v4 a race shoe?", a: "It can race shorter events, but it is mainly a lightweight trainer." },
+      { q: "Is it stable?", a: "Stability is not its strength. It is best for neutral runners." },
+      { q: "Why choose it over a plated shoe?", a: "Because it feels lighter, more natural, and less rigid underfoot." },
+    ],
+  },
+  "Adidas Adizero SL 2": {
+    pros: ["Light and efficient", "Good value", "Works for daily and faster runs"],
+    cons: ["Not plush", "Upper refinement is average"],
+    verdict: "A strong budget-performance trainer for runners who want one lighter shoe to cover multiple jobs.",
+    rating: 4.1,
+    detailedReview:
+      "Adidas Adizero SL 2 is attractive because it gives a lighter and faster feeling than typical daily trainers without jumping to a full race-focused setup. That makes it useful for runners who want one shoe to cover regular runs and occasional faster work.\n\nIt is not highly cushioned, but the ride feels efficient and controlled enough for a lot of practical training. If your pace is moderate to fast and you like a lighter shoe, it makes sense.\n\nThe comfort level is not as plush as max-cushion trainers, so runners focused on softness should look elsewhere. For value-oriented performance, though, it is very solid.",
+    idealFor: ["Value-focused runners", "Moderate tempo work", "Single-shoe rotation seekers"],
+    notFor: ["Soft-cushion lovers", "Very long recovery-run focus"],
+    tips: [
+      "A good option if you want one lighter trainer instead of separate daily and workout shoes.",
+      "Compare with Rebel v4 if you prefer more fun over more grounded control.",
+      "Best for runners who naturally prefer lighter shoes.",
+    ],
+    faq: [
+      { q: "Is Adizero SL 2 a beginner shoe?", a: "It can work for some beginners, but comfort-first beginners may prefer a softer trainer." },
+      { q: "Is it a speed shoe?", a: "It sits between daily trainer and lightweight workout shoe." },
+      { q: "Is it good value?", a: "Yes. Value is one of the biggest reasons to buy it." },
+    ],
+  },
+  "Nike Structure 25": {
+    pros: ["Useful guidance", "Reliable daily ride", "Good option for mild stability needs"],
+    cons: ["Less lively than Pegasus", "Support feel may be unnecessary for neutral runners"],
+    verdict: "A sensible daily stability trainer for runners who want more guidance than a neutral Nike model offers.",
+    rating: 4.2,
+    detailedReview:
+      "Nike Structure 25 fills an important role in the lineup by giving runners a more guided ride than Pegasus without moving into an overly harsh support category. It feels more controlled through the midfoot and heel, which is useful for runners who get sloppy late in runs.\n\nThat makes it a good choice for mild to moderate overpronators, heavier runners who want a more centered platform, or Nike users who find neutral trainers too loose in structure. It still behaves like a daily trainer rather than a correction device.\n\nNeutral runners may find the extra guidance unnecessary. For those who want support with familiar Nike fit, though, Structure 25 is easy to justify.",
+    idealFor: ["Mild overpronators", "Daily support shoe users", "Nike runners wanting more guidance"],
+    notFor: ["Neutral runners wanting a free ride", "Runners chasing bounce"],
+    tips: [
+      "Best for daily mileage where form drops as fatigue builds.",
+      "Compare with Pegasus if you are unsure whether you need support.",
+      "A practical option if you want support without a very bulky feel.",
+    ],
+    faq: [
+      { q: "Is Structure 25 a strong stability shoe?", a: "It gives meaningful guidance, but it is not the most aggressive support shoe on the market." },
+      { q: "Who should choose it over Pegasus?", a: "Runners who want more structure and support in daily training." },
+      { q: "Can beginners use it?", a: "Yes, especially beginners who suspect they need mild stability support." },
+    ],
+  },
 };
