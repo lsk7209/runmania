@@ -1,7 +1,9 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import fs from "fs";
+import querystring from "querystring";
+import type { IncomingMessage, ServerResponse } from "http";
 import { componentTagger } from "lovable-tagger";
 
 /* ── Sitemap auto-generation plugin ── */
@@ -183,19 +185,157 @@ ${items}
   };
 }
 
+function devApiPlugin(): Plugin {
+  return {
+    name: "vite-plugin-dev-api",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = req.url ? new URL(req.url, "http://127.0.0.1") : null;
+        if (!url || !url.pathname.startsWith("/api/")) {
+          return next();
+        }
+
+        const modulePath = `${url.pathname}.ts`;
+        const absoluteModulePath = path.resolve(__dirname, `.${modulePath}`);
+        if (!fs.existsSync(absoluteModulePath)) {
+          res.statusCode = 404;
+          res.setHeader("Content-Type", "application/json; charset=utf-8");
+          res.end(JSON.stringify({ error: "API route not found" }));
+          return;
+        }
+
+        try {
+          const mod = await server.ssrLoadModule(modulePath);
+          const handler = mod?.default;
+
+          if (typeof handler !== "function") {
+            throw new Error(`API handler not found for ${url.pathname}`);
+          }
+
+          const bodyText = await readRequestBody(req);
+          const adaptedReq = req as IncomingMessage & {
+            body?: unknown;
+            query?: Record<string, string>;
+          };
+          adaptedReq.body = parseRequestBody(req, bodyText);
+          adaptedReq.query = Object.fromEntries(url.searchParams.entries());
+
+          const adaptedRes = createVercelLikeResponse(res);
+          await handler(adaptedReq, adaptedRes);
+
+          if (!res.writableEnded) {
+            res.end();
+          }
+        } catch (error) {
+          server.ssrFixStacktrace(error as Error);
+          console.error(`[dev-api] ${url.pathname}`, error);
+
+          if (!res.writableEnded) {
+            res.statusCode = 500;
+            res.setHeader("Content-Type", "application/json; charset=utf-8");
+            res.end(
+              JSON.stringify({
+                error: error instanceof Error ? error.message : "Internal Server Error",
+              }),
+            );
+          }
+        }
+      });
+    },
+  };
+}
+
+function createVercelLikeResponse(res: ServerResponse) {
+  const adaptedRes = res as ServerResponse & {
+    status: (code: number) => typeof adaptedRes;
+    json: (payload: unknown) => typeof adaptedRes;
+    send: (payload: unknown) => typeof adaptedRes;
+  };
+
+  adaptedRes.status = (code: number) => {
+    adaptedRes.statusCode = code;
+    return adaptedRes;
+  };
+
+  adaptedRes.json = (payload: unknown) => {
+    if (!adaptedRes.headersSent) {
+      adaptedRes.setHeader("Content-Type", "application/json; charset=utf-8");
+    }
+    adaptedRes.end(JSON.stringify(payload));
+    return adaptedRes;
+  };
+
+  adaptedRes.send = (payload: unknown) => {
+    if (typeof payload === "object" && payload !== null && !Buffer.isBuffer(payload)) {
+      return adaptedRes.json(payload);
+    }
+    adaptedRes.end(payload as string | Buffer | Uint8Array);
+    return adaptedRes;
+  };
+
+  return adaptedRes;
+}
+
+async function readRequestBody(req: IncomingMessage) {
+  if (req.method === "GET" || req.method === "HEAD") {
+    return "";
+  }
+
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks).toString("utf-8");
+}
+
+function parseRequestBody(req: IncomingMessage, bodyText: string) {
+  if (!bodyText) {
+    return undefined;
+  }
+
+  const contentType = String(req.headers["content-type"] || "");
+  if (contentType.includes("application/json")) {
+    return JSON.parse(bodyText);
+  }
+
+  if (contentType.includes("application/x-www-form-urlencoded")) {
+    return querystring.parse(bodyText);
+  }
+
+  try {
+    return JSON.parse(bodyText);
+  } catch {
+    return bodyText;
+  }
+}
+
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-    hmr: {
-      overlay: false,
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  Object.assign(process.env, env);
+
+  return {
+    server: {
+      host: "::",
+      port: 8080,
+      hmr: {
+        overlay: false,
+      },
     },
-  },
-  plugins: [react(), mode === "development" && componentTagger(), sitemapPlugin(), indexNowPlugin(), rssPlugin()].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+    plugins: [
+      react(),
+      devApiPlugin(),
+      mode === "development" && componentTagger(),
+      sitemapPlugin(),
+      indexNowPlugin(),
+      rssPlugin(),
+    ].filter(Boolean),
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
     },
-  },
-}));
+  };
+});

@@ -1,18 +1,74 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ensureContentSchema, tursoClient } from "./db.js";
+import {
+  buildQualityGate,
+  buildSchemaJson,
+  buildSeoBrief,
+  type InternalLinkCandidate,
+  type QualityGateResult,
+  type SeoGenerationMetaInput,
+  type SearchIntent,
+} from "./seoPipeline.js";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-type NormalizedGenerationMeta = {
-  template: string;
-  targetAudience: string;
-  tone: string;
-  length: "short" | "medium" | "long";
-  seoKeywords: string[];
-  cta: string;
-  contentType: "blog" | "review" | "utility";
+type InternalLinkSuggestion = {
+  slug: string;
+  title: string;
+  anchor: string;
+  reason: string;
 };
+
+type NormalizedGenerationMeta = SeoGenerationMetaInput & {
+  originalTitle?: string;
+  refinedTitle?: string;
+  titleCandidates?: string[];
+  serpQuery?: string;
+  articleAngle?: string;
+  serpSummary?: string;
+  competitorHighlights?: string[];
+  faqQuestions?: string[];
+  sourceUrls?: string[];
+  internalLinks?: InternalLinkSuggestion[];
+  metaTitle?: string;
+  metaDescription?: string;
+  schemaType?: string;
+  schemaJson?: Record<string, unknown>;
+  qualityGate?: QualityGateResult;
+};
+
+type BlogPostRow = {
+  id?: string | null;
+  status?: string | null;
+  generation_meta?: unknown;
+  content_type?: string | null;
+  workflow_status?: string | null;
+  title?: string | null;
+  slug?: string | null;
+  excerpt?: string | null;
+};
+
+type GeneratedPayload = {
+  title: string;
+  excerpt: string;
+  content: string[];
+  tags: string[];
+  read_time: string;
+  hero_image: string;
+  faq: Array<{ question: string; answer: string }>;
+  related_slugs: string[];
+};
+
+export class GenerationError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "GenerationError";
+    this.status = status;
+  }
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -35,12 +91,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "postId is required" });
   }
 
+  try {
+    await generateContentForPost({ postId, options });
+
+    return res.status(200).json({
+      success: true,
+      message: "Content generated and saved for review.",
+      postId,
+    });
+  } catch (error: unknown) {
+    const status = error instanceof GenerationError ? error.status : 500;
+    return res.status(status).json({ error: getErrorMessage(error, "Failed to generate content") });
+  }
+}
+
+export async function generateContentForPost(input: { postId: string; options?: unknown }) {
+  const { postId, options } = input;
   const geminiApiKey = (process.env.GEMINI_API_KEY || "").trim();
   if (!geminiApiKey) {
-    return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+    throw new GenerationError(500, "GEMINI_API_KEY is not configured");
   }
 
-  let logId = crypto.randomUUID();
+  const logId = crypto.randomUUID();
+  let generationLocked = false;
 
   try {
     await ensureContentSchema();
@@ -51,13 +124,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     if (resultPost.rows.length === 0) {
-      return res.status(404).json({ error: "Post not found" });
+      throw new GenerationError(404, "Post not found");
     }
 
-    const post = resultPost.rows[0] as any;
+    const post = resultPost.rows[0] as BlogPostRow;
+    if (post.status === "published") {
+      throw new GenerationError(
+        409,
+        "Published posts cannot be regenerated. Move the post back to draft before generating a new AI draft.",
+      );
+    }
+
+    const lockResult = await tursoClient.execute({
+      sql: `UPDATE blog_posts
+        SET generation_in_progress=1, generation_started_at=CURRENT_TIMESTAMP
+        WHERE id=? AND COALESCE(generation_in_progress, 0)=0 AND status != 'published'`,
+      args: [postId],
+    });
+
+    if ((lockResult.rowsAffected ?? 0) === 0) {
+      throw new GenerationError(409, "Generation is already in progress for this post.");
+    }
+
+    generationLocked = true;
+
     const existingMeta = tryParse(post.generation_meta) || {};
     const generationMeta = normalizeGenerationMeta({ ...existingMeta, ...(options || {}) });
     const contentType = post.content_type || generationMeta.contentType || "blog";
+    const originalTitle = String(post.title || "").trim();
+    const slug = String(post.slug || "").trim();
+    const internalLinkCandidates = await loadInternalLinkCandidates(postId);
+    const seoBrief = await buildSeoBrief({
+      title: originalTitle,
+      contentType,
+      generationMeta,
+      internalLinkCandidates,
+    });
 
     await tursoClient.execute({
       sql: `INSERT INTO content_generation_logs
@@ -68,63 +170,117 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         postId,
         contentType,
         post.workflow_status || "idea",
-        JSON.stringify(generationMeta),
+        JSON.stringify({
+          ...generationMeta,
+          originalTitle,
+          refinedTitle: seoBrief.refinedTitle,
+          primaryKeyword: seoBrief.primaryKeyword,
+          searchIntent: seoBrief.searchIntent,
+        }),
       ],
     });
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = buildPrompt({
-      title: post.title,
-      slug: post.slug,
-      excerpt: post.excerpt,
+      title: originalTitle,
+      slug,
+      excerpt: post.excerpt || undefined,
       contentType,
       generationMeta,
+      seoBrief,
     });
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     const cleanText = stripJsonCodeBlock(text);
-    const parsedContent = validateGeneratedPayload(JSON.parse(cleanText));
+    const parsedContent = validateGeneratedPayload(JSON.parse(cleanText), generationMeta);
+    const relatedSlugs =
+      parsedContent.related_slugs.length > 0
+        ? parsedContent.related_slugs
+        : seoBrief.internalLinks.map((item) => item.slug);
+    const finalTitle = parsedContent.title || seoBrief.refinedTitle || originalTitle;
+    const schemaJson = buildSchemaJson({
+      title: finalTitle,
+      slug,
+      excerpt: parsedContent.excerpt,
+      faq: parsedContent.faq,
+      content: parsedContent.content,
+      heroImage: parsedContent.hero_image,
+      seoBrief,
+    });
+    const qualityGate = buildQualityGate({
+      generated: {
+        ...parsedContent,
+        related_slugs: relatedSlugs,
+      },
+      seoBrief,
+      availableInternalLinks: internalLinkCandidates.length,
+      editorRequiredSections: generationMeta.mustIncludeSections,
+    });
 
     const mergedMeta = {
       ...generationMeta,
+      originalTitle,
+      refinedTitle: seoBrief.refinedTitle,
+      titleCandidates: seoBrief.titleCandidates,
+      primaryKeyword: seoBrief.primaryKeyword,
+      seoKeywords: uniqueStrings([seoBrief.primaryKeyword, ...seoBrief.secondaryKeywords]),
+      searchIntent: seoBrief.searchIntent,
+      serpQuery: seoBrief.serpQuery,
+      articleAngle: seoBrief.articleAngle,
+      serpSummary: seoBrief.serpSummary,
+      competitorHighlights: seoBrief.competitorHighlights,
+      mustIncludeSections: seoBrief.mustIncludeSections,
+      faqQuestions: seoBrief.faqQuestions,
+      sourceUrls: seoBrief.supportingSourceUrls,
+      internalLinks: seoBrief.internalLinks,
+      metaTitle: seoBrief.metaTitle,
+      metaDescription: seoBrief.metaDescription,
+      schemaType: seoBrief.schemaType,
+      schemaJson,
+      qualityGate,
       lastPromptAt: new Date().toISOString(),
-    };
+    } satisfies NormalizedGenerationMeta;
 
     await tursoClient.execute({
       sql: `UPDATE blog_posts SET
-        title=?, excerpt=?, content=?, tags=?, read_time=?, hero_image=?, faq=?,
+        title=?, excerpt=?, content=?, tags=?, read_time=?, hero_image=?, related_slugs=?, faq=?,
         content_type=?, workflow_status='reviewing', generation_meta=?, last_generated_at=CURRENT_TIMESTAMP,
-        generation_count=COALESCE(generation_count, 0) + 1, updated_at=CURRENT_TIMESTAMP
+        generation_count=COALESCE(generation_count, 0) + 1,
+        generation_in_progress=0, generation_started_at=NULL, updated_at=CURRENT_TIMESTAMP
         WHERE id=?`,
       args: [
-        parsedContent.title || post.title,
+        finalTitle,
         parsedContent.excerpt,
         JSON.stringify(parsedContent.content),
         JSON.stringify(parsedContent.tags),
         parsedContent.read_time,
         parsedContent.hero_image,
+        JSON.stringify(relatedSlugs),
         JSON.stringify(parsedContent.faq),
         contentType,
         JSON.stringify(mergedMeta),
         postId,
       ],
     });
+    generationLocked = false;
 
     await tursoClient.execute({
       sql: `UPDATE content_generation_logs
         SET status='completed', workflow_status='reviewing', generated_title=?, completed_at=CURRENT_TIMESTAMP
         WHERE id=?`,
-      args: [parsedContent.title || post.title, logId],
+      args: [finalTitle, logId],
     });
 
-    return res.status(200).json({
-      success: true,
-      message: "Content generated and saved for review.",
+    return {
       postId,
-    });
-  } catch (error: any) {
+      contentType,
+      generatedTitle: finalTitle,
+      generationMeta: mergedMeta,
+      qualityGate,
+    };
+  } catch (error: unknown) {
     console.error("[admin-generate] Error generating content:", error);
 
     try {
@@ -133,13 +289,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sql: `UPDATE content_generation_logs
           SET status='failed', error_message=?, completed_at=CURRENT_TIMESTAMP
           WHERE id=?`,
-        args: [error.message || "Failed to generate content", logId],
+        args: [getErrorMessage(error, "Failed to generate content"), logId],
       });
     } catch (logError) {
       console.error("[admin-generate] Failed to save generation log:", logError);
     }
 
-    return res.status(500).json({ error: error.message || "Failed to generate content" });
+    if (generationLocked) {
+      try {
+        await releaseGenerationLock(postId);
+      } catch (unlockError) {
+        console.error("[admin-generate] Failed to release generation lock:", unlockError);
+      }
+    }
+
+    throw error;
   }
 }
 
@@ -149,18 +313,30 @@ function buildPrompt(input: {
   excerpt?: string;
   contentType: string;
   generationMeta: NormalizedGenerationMeta;
+  seoBrief: Awaited<ReturnType<typeof buildSeoBrief>>;
 }) {
-  const { title, slug, excerpt, contentType, generationMeta } = input;
-  const keywordText = generationMeta.seoKeywords.join(", ");
-  const minimumBlocks =
-    generationMeta.length === "short" ? 10 : generationMeta.length === "long" ? 18 : 14;
+  const { title, slug, excerpt, contentType, generationMeta, seoBrief } = input;
+  const keywordText = uniqueStrings([seoBrief.primaryKeyword, ...seoBrief.secondaryKeywords]).join(", ");
+  const minimumBlocks = getMinimumBlockCount(generationMeta.length);
+  const internalLinkText =
+    seoBrief.internalLinks.length > 0
+      ? seoBrief.internalLinks
+          .map((link) => `- slug: ${link.slug} | title: ${link.title} | anchor: ${link.anchor} | reason: ${link.reason}`)
+          .join("\n")
+      : "- none";
+  const sourceUrlText = seoBrief.supportingSourceUrls.length > 0 ? seoBrief.supportingSourceUrls.join("\n") : "none";
+  const mustIncludeText = seoBrief.mustIncludeSections.length > 0 ? seoBrief.mustIncludeSections.join("\n") : "none";
+  const competitorText = seoBrief.competitorHighlights.length > 0 ? seoBrief.competitorHighlights.join("\n") : "none";
+  const faqQuestionText = seoBrief.faqQuestions.length > 0 ? seoBrief.faqQuestions.join("\n") : "none";
 
   return `
-You are an expert Korean content strategist and editor for a running shoe website.
-Write production-ready content in Korean for direct use by a human editor.
+You are a senior Korean SEO editor and running-gear subject matter strategist.
+Write a premium, publication-ready Korean article designed to satisfy search intent better than competing pages.
+The article must feel expert-led, concrete, differentiated, and useful enough to deserve strong organic rankings over time.
 
 Post context
-- Title: ${title}
+- Original title: ${title}
+- Refined working title: ${seoBrief.refinedTitle}
 - Slug: ${slug}
 - Existing excerpt: ${excerpt || "none"}
 - Content type: ${contentType}
@@ -168,11 +344,45 @@ Post context
 - Target audience: ${generationMeta.targetAudience || "general runners"}
 - Tone: ${generationMeta.tone}
 - Length: ${generationMeta.length}
+- Primary keyword: ${seoBrief.primaryKeyword || "none"}
 - SEO keywords: ${keywordText || "none"}
+- Search intent: ${seoBrief.searchIntent}
 - CTA: ${generationMeta.cta || "none"}
+- Article angle: ${seoBrief.articleAngle}
+- SERP summary: ${seoBrief.serpSummary}
+- Suggested meta title: ${seoBrief.metaTitle}
+- Suggested meta description: ${seoBrief.metaDescription}
 
 Content-type guidance
 ${getContentRules(contentType, generationMeta.template)}
+
+Required sections
+${mustIncludeText}
+
+Competitor insights to beat
+${competitorText}
+
+Questions the FAQ should help answer
+${faqQuestionText}
+
+Fact-check source URLs
+${sourceUrlText}
+
+Allowed internal links
+${internalLinkText}
+
+Search quality requirements
+- Infer the dominant search intent from the title and satisfy it completely.
+- Structure the article to win on E-E-A-T: clear expertise, factual caution, practical details, and decision-supporting comparisons.
+- Include information gain beyond generic AI content: specific scenarios, tradeoffs, buying criteria, mistakes, and action steps.
+- Make the article skimmable for search visitors with strong headings, tables, checklists, and concise summary blocks where useful.
+- The introduction must immediately answer the search query and explain who the article is for.
+- Add at least one section that compares alternatives, benchmarks, or selection criteria in a non-obvious way.
+- If the title implies commercial investigation, include buying factors, best-fit recommendations, and who should avoid each option.
+- If the title implies informational intent, include definitions, process steps, pitfalls, and practical examples.
+- Use SEO keywords naturally in title, excerpt, headings, body, FAQ, and checklist/table labels without stuffing.
+- Avoid filler, vague superlatives, fabricated statistics, unverifiable claims, and repetitive phrasing.
+- Write like an experienced human editor, not a generic AI summary.
 
 Return valid JSON only. Do not wrap your answer in markdown.
 Use exactly this schema:
@@ -189,6 +399,7 @@ Use exactly this schema:
   "tags": ["태그1", "태그2", "태그3"],
   "read_time": "8분",
   "hero_image": "/assets/shoes/nb-1080.png",
+  "related_slugs": ["existing-slug-1", "existing-slug-2"],
   "faq": [
     { "question": "질문", "answer": "답변" }
   ]
@@ -207,6 +418,11 @@ Hard rules
    /assets/shoes/nike-pegasus.png
    /assets/shoes/saucony-speed.png
 6. The output must be safe for human review before publication.
+7. Every major section should add distinct value; avoid repeating the same advice in different words.
+8. Prefer original wording and concrete decision criteria over generic motivational copy.
+9. related_slugs may only contain slugs from the allowed internal links list above.
+10. Use the refined working title unless there is a clearly better search-intent-preserving improvement.
+11. If the Required sections list is not "none", include each required section as an explicit "## " heading using the same wording or a very close phrasing.
 `;
 }
 
@@ -228,8 +444,9 @@ function getContentRules(contentType: string, template: string) {
   }
 
   return `
-- This is a blog article. Use a strong search-intent structure with clear sections and practical takeaways.
+- This is a blog article. Use a strong search-intent structure with a definitive answer near the top.
 - Include one checklist or table block when useful.
+- Add a section covering common mistakes or misconceptions.
 - End with a short CTA section aligned to the provided CTA.
 - Template emphasis: ${template}.`;
 }
@@ -242,36 +459,64 @@ function stripJsonCodeBlock(text: string) {
   return cleanText.trim();
 }
 
-function validateGeneratedPayload(payload: any) {
-  const content = Array.isArray(payload?.content)
-    ? payload.content.map((item: unknown) => String(item).trim()).filter(Boolean)
+export function getMinimumBlockCount(length: NormalizedGenerationMeta["length"]) {
+  return length === "short" ? 10 : length === "long" ? 18 : 14;
+}
+
+export function validateGeneratedPayload(
+  payload: unknown,
+  generationMeta: Pick<NormalizedGenerationMeta, "length">,
+) {
+  const source = isRecord(payload) ? payload : {};
+  const content = Array.isArray(source.content)
+    ? source.content.map((item: unknown) => String(item).trim()).filter(Boolean)
     : [];
-  if (content.length < 10) {
-    throw new Error("Generated content is too short");
+  const minimumBlocks = getMinimumBlockCount(generationMeta.length);
+  if (content.length < minimumBlocks) {
+    throw new Error(`Generated content must contain at least ${minimumBlocks} content blocks`);
   }
 
-  const tags = Array.isArray(payload?.tags)
-    ? payload.tags.map((item: unknown) => String(item).trim()).filter(Boolean)
+  const tags = Array.isArray(source.tags)
+    ? source.tags.map((item: unknown) => String(item).trim()).filter(Boolean)
     : [];
 
-  const faq = Array.isArray(payload?.faq)
-    ? payload.faq
-        .map((item: any) => ({
-          question: String(item?.question || "").trim(),
-          answer: String(item?.answer || "").trim(),
-        }))
-        .filter((item: { question: string; answer: string }) => item.question && item.answer)
+  const faq = Array.isArray(source.faq)
+    ? source.faq
+        .map((item: unknown) => {
+          const faqItem = isRecord(item) ? item : {};
+          const question = String(faqItem.question || "").trim();
+          const answer = String(faqItem.answer || "").trim();
+          return question && answer ? { question, answer } : null;
+        })
+        .filter((item): item is { question: string; answer: string } => item !== null)
     : [];
+  const relatedSlugs = Array.isArray(source.related_slugs)
+    ? source.related_slugs.map((item: unknown) => String(item).trim()).filter(Boolean)
+    : [];
+
+  if (faq.length < 3 || faq.length > 5) {
+    throw new Error("Generated FAQ must contain between 3 and 5 items");
+  }
 
   return {
-    title: String(payload?.title || "").trim(),
-    excerpt: String(payload?.excerpt || "").trim(),
+    title: String(source.title || "").trim(),
+    excerpt: String(source.excerpt || "").trim(),
     content,
     tags,
-    read_time: String(payload?.read_time || estimateReadTime(content)).trim(),
-    hero_image: validateHeroImage(payload?.hero_image),
+    read_time: String(source.read_time || estimateReadTime(content)).trim(),
+    hero_image: validateHeroImage(source.hero_image),
     faq,
-  };
+    related_slugs: uniqueStrings(relatedSlugs).slice(0, 5),
+  } satisfies GeneratedPayload;
+}
+
+async function releaseGenerationLock(postId: string) {
+  await tursoClient.execute({
+    sql: `UPDATE blog_posts
+      SET generation_in_progress=0, generation_started_at=NULL
+      WHERE id=?`,
+    args: [postId],
+  });
 }
 
 function validateHeroImage(value: unknown) {
@@ -303,23 +548,126 @@ function tryParse(value: unknown) {
   }
 }
 
-function normalizeGenerationMeta(meta: any): NormalizedGenerationMeta {
-  const rawLength = String(meta?.length || "medium");
+function normalizeGenerationMeta(meta: unknown): NormalizedGenerationMeta {
+  const source = isRecord(meta) ? meta : {};
+  const rawLength = String(source.length || "medium");
   const normalizedLength =
     rawLength === "short" || rawLength === "long" ? rawLength : "medium";
 
   return {
-    template: meta?.template || "guide",
-    targetAudience: meta?.targetAudience || "",
-    tone: meta?.tone || "expert",
+    template: String(source.template || "guide"),
+    targetAudience: String(source.targetAudience || ""),
+    tone: String(source.tone || "expert"),
     length: normalizedLength,
-    seoKeywords: Array.isArray(meta?.seoKeywords)
-      ? meta.seoKeywords.map((item: unknown) => String(item).trim()).filter(Boolean)
-      : String(meta?.seoKeywords || "")
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-    cta: meta?.cta || "",
-    contentType: meta?.contentType || "blog",
+    seoKeywords: normalizeListInput(source.seoKeywords),
+    cta: String(source.cta || ""),
+    contentType:
+      source.contentType === "review" || source.contentType === "utility" ? source.contentType : "blog",
+    primaryKeyword: String(source.primaryKeyword || "").trim(),
+    searchIntent: normalizeSearchIntent(source.searchIntent),
+    competitorUrls: normalizeListInput(source.competitorUrls),
+    referenceUrls: normalizeListInput(source.referenceUrls),
+    mustIncludeSections: normalizeListInput(source.mustIncludeSections),
+    originalTitle: String(source.originalTitle || "").trim() || undefined,
+    refinedTitle: String(source.refinedTitle || "").trim() || undefined,
+    titleCandidates: normalizeListInput(source.titleCandidates),
+    serpQuery: String(source.serpQuery || "").trim() || undefined,
+    articleAngle: String(source.articleAngle || "").trim() || undefined,
+    serpSummary: String(source.serpSummary || "").trim() || undefined,
+    competitorHighlights: normalizeListInput(source.competitorHighlights),
+    faqQuestions: normalizeListInput(source.faqQuestions),
+    sourceUrls: normalizeListInput(source.sourceUrls),
+    internalLinks: normalizeInternalLinks(source.internalLinks),
+    metaTitle: String(source.metaTitle || "").trim() || undefined,
+    metaDescription: String(source.metaDescription || "").trim() || undefined,
+    schemaType: String(source.schemaType || "").trim() || undefined,
+    schemaJson: isRecord(source.schemaJson) ? source.schemaJson : undefined,
+    qualityGate: isQualityGate(source.qualityGate) ? source.qualityGate : undefined,
   };
+}
+
+function normalizeListInput(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  return String(value || "")
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeInternalLinks(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!isRecord(item)) return null;
+      const slug = String(item.slug || "").trim();
+      const title = String(item.title || "").trim();
+      const anchor = String(item.anchor || "").trim();
+      const reason = String(item.reason || "").trim();
+      if (!slug || !title || !anchor) return null;
+      return { slug, title, anchor, reason };
+    })
+    .filter((item): item is InternalLinkSuggestion => item !== null);
+}
+
+function normalizeSearchIntent(value: unknown): SearchIntent {
+  const intent = String(value || "").trim().toLowerCase();
+  if (
+    intent === "informational" ||
+    intent === "commercial" ||
+    intent === "transactional" ||
+    intent === "comparison" ||
+    intent === "local"
+  ) {
+    return intent;
+  }
+  return "auto";
+}
+
+function isQualityGate(value: unknown): value is QualityGateResult {
+  if (!isRecord(value)) return false;
+  return typeof value.passed === "boolean" && typeof value.score === "number";
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values.map((item) => item.trim()).filter(Boolean))];
+}
+
+async function loadInternalLinkCandidates(postId: string) {
+  const result = await tursoClient.execute({
+    sql: `SELECT slug, title, excerpt, tags
+          FROM blog_posts
+          WHERE status = 'published'
+            AND workflow_status = 'approved'
+            AND id != ?
+          ORDER BY published_at DESC
+          LIMIT 12`,
+    args: [postId],
+  });
+
+  return result.rows
+    .map((row) => {
+      const source = isRecord(row) ? row : {};
+      const parsedTags = tryParse(source.tags);
+      return {
+        slug: String(source.slug || "").trim(),
+        title: String(source.title || "").trim(),
+        excerpt: String(source.excerpt || "").trim(),
+        tags: Array.isArray(parsedTags)
+          ? parsedTags.map((item: unknown) => String(item).trim()).filter(Boolean)
+          : [],
+      } satisfies InternalLinkCandidate;
+    })
+    .filter((item) => item.slug && item.title);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 }

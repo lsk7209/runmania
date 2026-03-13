@@ -7,7 +7,7 @@
 - Confirm `TURSO_AUTH_TOKEN` is set in the deployment environment.
 - Confirm `GEMINI_API_KEY` is set in the deployment environment.
 - Confirm `CRON_SECRET` is set in the deployment environment.
-- Call `/api/debug-env` with admin auth and verify only boolean setup values are returned.
+- Call `/api/debug-env` with `POST` plus `x-admin-password` header or JSON body password, and verify only boolean setup values are returned.
 
 ## 2. Admin Login
 
@@ -55,7 +55,7 @@
 
 ## 8. Scheduled Publish
 
-- Set one approved item to `scheduled` with a future `scheduled_at`.
+- Set one approved item to `scheduled` with a future `scheduled_at` from the admin editor.
 - Verify cron does not publish it early.
 - Move `scheduled_at` to a past time.
 - Verify cron publishes it only after approval and schedule conditions are satisfied.
@@ -77,7 +77,7 @@
 
 ## 11. Security
 
-- Confirm `/api/debug-env` requires admin authentication.
+- Confirm `/api/debug-env` requires `POST` plus admin authentication, and does not accept password via query string.
 - Confirm `/api/cron` requires `Authorization: Bearer <CRON_SECRET>` when `CRON_SECRET` is configured.
 - Confirm no API response exposes raw database URLs, tokens, or API keys.
 

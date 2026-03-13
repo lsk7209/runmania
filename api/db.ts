@@ -1,5 +1,9 @@
 import { createClient } from "@libsql/client/web";
 
+type DbClient = ReturnType<typeof createClient>;
+type ExecuteArgs = Parameters<DbClient["execute"]>;
+type BatchArgs = Parameters<DbClient["batch"]>;
+
 // @libsql/client/web requires https:// not libsql://
 function fixUrl(url: string): string {
   if (url.startsWith("libsql://")) {
@@ -18,8 +22,8 @@ export function getDb() {
 }
 
 export const tursoClient = {
-  execute: (...args: any[]) => getDb().execute(...(args as [any])),
-  batch: (...args: any[]) => getDb().batch(...(args as [any])),
+  execute: (...args: ExecuteArgs) => getDb().execute(...args),
+  batch: (...args: BatchArgs) => getDb().batch(...args),
 };
 
 let schemaEnsured = false;
@@ -27,8 +31,8 @@ let schemaEnsured = false;
 async function addColumnIfMissing(sql: string) {
   try {
     await tursoClient.execute(sql);
-  } catch (error: any) {
-    const message = String(error?.message ?? "");
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error ?? "");
     if (!message.includes("duplicate column name")) {
       throw error;
     }
@@ -37,6 +41,17 @@ async function addColumnIfMissing(sql: string) {
 
 export async function ensureContentSchema() {
   if (schemaEnsured) return;
+
+  await tursoClient.execute(`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      publish_interval_hours INTEGER NOT NULL DEFAULT 24,
+      auto_publish_enabled INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
+  await tursoClient.execute("INSERT OR IGNORE INTO app_settings (id) VALUES (1)");
 
   await tursoClient.execute(`
     CREATE TABLE IF NOT EXISTS content_generation_logs (
@@ -53,11 +68,14 @@ export async function ensureContentSchema() {
     )
   `);
 
+  await addColumnIfMissing("ALTER TABLE blog_posts ADD COLUMN scheduled_at TEXT");
   await addColumnIfMissing("ALTER TABLE blog_posts ADD COLUMN content_type TEXT NOT NULL DEFAULT 'blog'");
   await addColumnIfMissing("ALTER TABLE blog_posts ADD COLUMN workflow_status TEXT NOT NULL DEFAULT 'idea'");
   await addColumnIfMissing("ALTER TABLE blog_posts ADD COLUMN generation_meta TEXT NOT NULL DEFAULT '{}'");
   await addColumnIfMissing("ALTER TABLE blog_posts ADD COLUMN last_generated_at TEXT");
   await addColumnIfMissing("ALTER TABLE blog_posts ADD COLUMN generation_count INTEGER NOT NULL DEFAULT 0");
+  await addColumnIfMissing("ALTER TABLE blog_posts ADD COLUMN generation_in_progress INTEGER NOT NULL DEFAULT 0");
+  await addColumnIfMissing("ALTER TABLE blog_posts ADD COLUMN generation_started_at TEXT");
 
   schemaEnsured = true;
 }

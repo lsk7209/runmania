@@ -1,11 +1,20 @@
 import { createClient } from "@libsql/client/web";
 
-const dbUrl = "libsql://runmaina-lsk7209.aws-ap-northeast-1.turso.io";
-const authToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzI2MDQxODUsImlkIjoiMDE5Y2I3NzEtNGIwMS03ZmEzLTgzZGYtZTk3MzBlYTM2N2QxIiwicmlkIjoiYzdjMjUwMjktOTljNy00NjA5LWFjYzktNzcwMTQ4MWVjZjRlIn0.S7qbQL16rtBM7-QazSMe6uTVpL_SmwoX_P0uHLwYxTGNpunFYJFx4ZfyAVi2pftXhYO3RDBVyFEcbQyVrzBWBg";
+type PostRow = {
+  id: string;
+  title: string;
+};
 
-const url = dbUrl.trim().startsWith("libsql://") 
-  ? dbUrl.trim().replace("libsql://", "https://") 
-  : dbUrl.trim();
+const dbUrl = (process.env.TURSO_DATABASE_URL || "").trim();
+const authToken = (process.env.TURSO_AUTH_TOKEN || "").trim();
+
+if (!dbUrl || !authToken) {
+  throw new Error("TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be set");
+}
+
+const url = dbUrl.startsWith("libsql://")
+  ? dbUrl.replace("libsql://", "https://")
+  : dbUrl;
 
 const client = createClient({
   url: url,
@@ -15,14 +24,14 @@ const client = createClient({
 async function run() {
   try {
     const result = await client.execute("SELECT id, title FROM blog_posts ORDER BY created_at ASC");
-    const posts = result.rows;
+    const posts = result.rows as PostRow[];
     console.log(`Found ${posts.length} posts to update with natural times.`);
 
     if (posts.length === 0) return;
 
     const now = new Date();
     // Start from approx (posts.length * 2) days ago
-    let baseDate = new Date(now.getTime() - (posts.length * 2 * 24 * 60 * 60 * 1000));
+    const baseDate = new Date(now.getTime() - (posts.length * 2 * 24 * 60 * 60 * 1000));
 
     for (let i = 0; i < posts.length; i++) {
         const post = posts[i];
@@ -37,15 +46,15 @@ async function run() {
 
         console.log(`Updating "${post.title}" -> ${dateStr}`);
         
-        await client.execute({
-            sql: "UPDATE blog_posts SET created_at = ?, published_at = ?, updated_at = ? WHERE id = ?",
-            args: [dateStr, dateStr, dateStr, post.id]
-        });
+      await client.execute({
+        sql: "UPDATE blog_posts SET created_at = ?, published_at = ?, updated_at = ? WHERE id = ?",
+        args: [dateStr, dateStr, dateStr, post.id],
+      });
     }
 
     console.log("All posts updated with natural randomized times.");
-  } catch (error) {
-    console.error("Error:", error);
+  } catch (error: unknown) {
+    console.error("Error:", error instanceof Error ? error.message : error);
   } finally {
     process.exit(0);
   }

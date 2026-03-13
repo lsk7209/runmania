@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Blog seed data for migrating hardcoded posts to database.
- * References LOCAL_POSTS from Blog.tsx to avoid duplicating content.
+ * References LOCAL_POSTS from localBlogPosts.ts to avoid duplicating content.
  */
 
-import { LOCAL_POSTS } from "@/pages/Blog";
+import { LOCAL_POSTS } from "@/data/localBlogPosts";
 
 // Reverse mapping: slug → DB hero_image path
 const SLUG_TO_HERO: Record<string, string> = {

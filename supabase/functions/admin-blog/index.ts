@@ -6,6 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type SeedPost = Record<string, unknown>;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -136,10 +138,11 @@ Deno.serve(async (req) => {
         const { data: created, error } = await supabase
           .from("blog_posts")
           .upsert(
-            posts.map((p: any) => ({
-              ...p,
+            posts.map((post: SeedPost) => ({
+              ...post,
               status: "published",
-              published_at: p.published_at || new Date().toISOString(),
+              published_at:
+                typeof post.published_at === "string" ? post.published_at : new Date().toISOString(),
             })),
             { onConflict: "slug" }
           )
