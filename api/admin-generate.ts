@@ -1,3 +1,9 @@
+/**
+ * @file admin-generate.ts
+ * 관리자용 AI 콘텐츠 생성 API 엔드포인트.
+ * Gemini API를 사용하여 블로그 포스트의 SEO 최적화된 콘텐츠를 자동 생성한다.
+ * 주요 흐름: 인증 → 포스트 조회 → 동시 생성 잠금 → SEO 브리프 구성 → Gemini 호출 → 품질 검증 → DB 저장
+ */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ensureContentSchema, tursoClient } from "./db.js";
@@ -13,6 +19,7 @@ import {
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
+/** 내부 링크 추천 정보 — SEO 브리프에서 관련 포스트 간 연결에 사용 */
 type InternalLinkSuggestion = {
   slug: string;
   title: string;
@@ -20,6 +27,7 @@ type InternalLinkSuggestion = {
   reason: string;
 };
 
+/** 생성 메타데이터 — SEO 파이프라인의 입력값과 생성 후 결과를 통합 관리 */
 type NormalizedGenerationMeta = SeoGenerationMetaInput & {
   originalTitle?: string;
   refinedTitle?: string;
@@ -105,6 +113,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+/**
+ * 특정 포스트에 대해 AI 콘텐츠를 생성하는 핵심 함수.
+ * cron.ts 등 외부에서도 호출 가능하도록 export 되어 있다.
+ * 동시 생성 방지를 위해 DB 레벨 잠금(generation_in_progress)을 사용한다.
+ */
 export async function generateContentForPost(input: { postId: string; options?: unknown }) {
   const { postId, options } = input;
   const geminiApiKey = (process.env.GEMINI_API_KEY || "").trim();
@@ -135,6 +148,8 @@ export async function generateContentForPost(input: { postId: string; options?: 
       );
     }
 
+    // 낙관적 잠금: 아직 생성 중이 아닌 포스트에만 잠금을 건다.
+    // rowsAffected=0이면 이미 다른 요청이 생성 중이라는 뜻이므로 409 반환.
     const lockResult = await tursoClient.execute({
       sql: `UPDATE blog_posts
         SET generation_in_progress=1, generation_started_at=CURRENT_TIMESTAMP
@@ -180,6 +195,7 @@ export async function generateContentForPost(input: { postId: string; options?: 
       ],
     });
 
+    // Gemini 2.5 Flash 모델로 SEO 최적화 콘텐츠 생성
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = buildPrompt({
@@ -193,7 +209,7 @@ export async function generateContentForPost(input: { postId: string; options?: 
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
-    const cleanText = stripJsonCodeBlock(text);
+    const cleanText = stripJsonCodeBlock(text); // Gemini가 ```json 블록으로 감쌀 수 있으므로 제거
     const parsedContent = validateGeneratedPayload(JSON.parse(cleanText), generationMeta);
     const relatedSlugs =
       parsedContent.related_slugs.length > 0
@@ -295,6 +311,7 @@ export async function generateContentForPost(input: { postId: string; options?: 
       console.error("[admin-generate] Failed to save generation log:", logError);
     }
 
+    // 에러 발생 시 잠금을 해제하여 포스트가 영구 잠금 상태에 빠지지 않도록 한다
     if (generationLocked) {
       try {
         await releaseGenerationLock(postId);
@@ -451,6 +468,7 @@ function getContentRules(contentType: string, template: string) {
 - Template emphasis: ${template}.`;
 }
 
+/** Gemini 응답에서 ```json ... ``` 마크다운 래핑을 제거한다 */
 function stripJsonCodeBlock(text: string) {
   let cleanText = text.trim();
   if (cleanText.startsWith("```json")) cleanText = cleanText.slice(7);
@@ -459,10 +477,15 @@ function stripJsonCodeBlock(text: string) {
   return cleanText.trim();
 }
 
+/** 콘텐츠 길이 설정에 따른 최소 블록 수 — short:10, medium:14, long:18 */
 export function getMinimumBlockCount(length: NormalizedGenerationMeta["length"]) {
   return length === "short" ? 10 : length === "long" ? 18 : 14;
 }
 
+/**
+ * Gemini가 생성한 JSON 페이로드를 검증하고 정규화한다.
+ * 최소 블록 수, FAQ 개수(3~5) 등 하드 룰을 적용하며, 위반 시 에러를 던진다.
+ */
 export function validateGeneratedPayload(
   payload: unknown,
   generationMeta: Pick<NormalizedGenerationMeta, "length">,
@@ -548,6 +571,7 @@ function tryParse(value: unknown) {
   }
 }
 
+/** 외부 입력(관리자 옵션 + DB 메타)을 안전한 기본값으로 정규화한다 */
 function normalizeGenerationMeta(meta: unknown): NormalizedGenerationMeta {
   const source = isRecord(meta) ? meta : {};
   const rawLength = String(source.length || "medium");
@@ -635,6 +659,7 @@ function uniqueStrings(values: string[]) {
   return [...new Set(values.map((item) => item.trim()).filter(Boolean))];
 }
 
+/** 현재 포스트를 제외하고, 게시 완료된 포스트 중 내부 링크 후보를 최대 12개 조회한다 */
 async function loadInternalLinkCandidates(postId: string) {
   const result = await tursoClient.execute({
     sql: `SELECT slug, title, excerpt, tags

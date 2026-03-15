@@ -1,4 +1,15 @@
+/**
+ * @file cron.ts
+ * 자동 발행 크론잡 API 엔드포인트 (GitHub Actions에서 매 1시간 호출).
+ * 실행 순서:
+ *   0) idea 상태 드래프트 1건 AI 생성 → 품질 게이트 통과 시 approved 전환
+ *   1) scheduled_at 도래한 approved 포스트 발행
+ *   2) 발행 간격(publish_interval_hours) 확인
+ *   3) approved 드래프트 중 가장 오래된 것 발행 (FIFO)
+ * CRON_SECRET Bearer 토큰으로 인증하며, app_settings 테이블의 설정을 따른다.
+ */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { generateContentForPost } from "./admin-generate.js";
 import { ensureContentSchema, tursoClient } from "./db.js";
 
 type AppSettingsRow = {
@@ -31,16 +42,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await ensureContentSchema();
     console.log(`[Cron] Executed at: ${new Date().toISOString()}`);
 
+    // app_settings는 싱글톤 행(id=1)으로 관리되며, 자동 발행 on/off와 발행 간격을 저장
     const resultSettings = await tursoClient.execute("SELECT * FROM app_settings WHERE id = 1");
     const settings = (resultSettings.rows[0] ?? {}) as AppSettingsRow;
     const autoPublishEnabled = isEnabled(settings.auto_publish_enabled);
     const publishIntervalHours = getPublishIntervalHours(settings.publish_interval_hours);
+
+    // 0단계: idea 상태 드래프트 1건 AI 생성
+    // Admin에서 제목만 입력(bulk_create)한 포스트를 cron이 순차적으로 1건씩 생성한다.
+    // Vercel 함수 타임아웃 회피를 위해 건당 1건만 처리한다.
+    const ideaResult = await tursoClient.execute(
+      `SELECT id, title FROM blog_posts
+       WHERE status = 'draft'
+         AND workflow_status = 'idea'
+         AND COALESCE(generation_in_progress, 0) = 0
+       ORDER BY created_at ASC
+       LIMIT 1`,
+    );
+
+    if (ideaResult.rows.length > 0) {
+      const ideaPost = ideaResult.rows[0] as { id: string; title: string };
+      console.log(`[Cron] Generating content for: ${ideaPost.title}`);
+      try {
+        const generationResult = await generateContentForPost({ postId: ideaPost.id });
+        if (generationResult.qualityGate.passed) {
+          await tursoClient.execute({
+            sql: `UPDATE blog_posts SET workflow_status='approved', updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+            args: [ideaPost.id],
+          });
+          console.log(`[Cron] Generated and approved: ${ideaPost.title}`);
+        } else {
+          console.log(`[Cron] Generated (quality gate failed, stays in reviewing): ${ideaPost.title}`);
+        }
+      } catch (genError: unknown) {
+        console.error(`[Cron] Generation failed for ${ideaPost.title}:`, genError);
+      }
+    }
 
     if (!autoPublishEnabled) {
       console.log("[Cron] Auto-publish is disabled in settings. Exiting.");
       return res.status(200).json({ success: true, message: "Auto-publish disabled" });
     }
 
+    // 1단계: 예약 발행 — scheduled_at 시간이 지난 승인 포스트를 우선 발행
     const nowIso = new Date().toISOString();
     const scheduledResult = await tursoClient.execute({
       sql: `SELECT id, title, slug
@@ -66,6 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // 2단계: 발행 간격 확인 — 마지막 발행으로부터 설정된 시간(기본 24h)이 지났는지 확인
     const resultLastPost = await tursoClient.execute(
       "SELECT published_at FROM blog_posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 1",
     );
@@ -85,6 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // 3단계: 승인된 드래프트 중 가장 오래된 것을 자동 발행 (FIFO 순서)
     const draftResult = await tursoClient.execute(
       "SELECT id, title, slug FROM blog_posts WHERE status = 'draft' AND workflow_status = 'approved' ORDER BY created_at ASC LIMIT 1",
     );
@@ -121,6 +167,7 @@ async function publishPost(id: string) {
   });
 }
 
+/** DB에서 다양한 타입으로 저장될 수 있는 auto_publish_enabled 값을 boolean으로 변환 */
 function isEnabled(value: AppSettingsRow["auto_publish_enabled"]) {
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value !== 0;
@@ -128,6 +175,7 @@ function isEnabled(value: AppSettingsRow["auto_publish_enabled"]) {
   return true;
 }
 
+/** 발행 간격 시간을 숫자로 파싱한다. 유효하지 않으면 기본값 24시간 */
 function getPublishIntervalHours(value: AppSettingsRow["publish_interval_hours"]) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {

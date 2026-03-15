@@ -1,4 +1,8 @@
 {
+    "functions": {
+        "api/cron.ts": { "maxDuration": 120 },
+        "api/admin-generate.ts": { "maxDuration": 120 }
+    },
     "redirects": [
         {
             "source": "/diagnosis",

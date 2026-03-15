@@ -2,7 +2,7 @@
 
 Date: 2026-03-13
 Reviewer: Codex
-Scope: whole-project review of the current Vite + Vercel/Turso + Supabase-migration codebase
+Scope: whole-project review of the current Vite + Vercel/Turso codebase
 
 ## Status Snapshot
 
@@ -159,30 +159,13 @@ Done when:
 - The endpoint no longer accepts password in the URL.
 - The response returns only the minimum safe diagnostic state, or the endpoint is removed.
 
-## Important Architecture Note
-
-This repository currently contains two overlapping backend paths:
-
-- Vercel serverless + Turso under `api/`
-- Supabase edge functions under `supabase/functions/`
-
-There is feature drift between them, especially around scheduling and settings tables:
-
-- Turso path uses `app_settings`
-- Supabase path uses `publish_settings`
-- Supabase admin function has a `schedule` action
-- Turso admin API does not
-
-Before implementing fixes, decide which path is canonical for production. Do not keep shipping both paths without an explicit ownership decision.
-
 ## Suggested Work Order
 
-1. Choose the canonical backend path for production: Turso/Vercel or Supabase.
-2. Fix `/api/cron` auth to fail closed.
-3. Repair scheduled publish end to end on the canonical path.
-4. Harden `/api/posts` parsing and stop silently masking production failures.
-5. Lock down or remove `/api/debug-env`.
-6. Clean lint debt and add real tests for the publish flow.
+1. Fix `/api/cron` auth to fail closed.
+2. Repair scheduled publish end to end on the Vercel/Turso path.
+3. Harden `/api/posts` parsing and stop silently masking production failures.
+4. Lock down or remove `/api/debug-env`.
+5. Clean lint debt and add real tests for the publish flow.
 
 ## Files To Inspect First
 
@@ -193,8 +176,6 @@ Before implementing fixes, decide which path is canonical for production. Do not
 - `src/pages/Admin.tsx`
 - `src/pages/Blog.tsx`
 - `schema.sql`
-- `supabase/functions/admin-blog/index.ts`
-- `supabase/functions/auto-publish/index.ts`
 - `docs/production-verification-checklist.md`
 
 ## Validation Commands

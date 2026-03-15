@@ -1,18 +1,30 @@
+/**
+ * @file shoesDb.ts
+ * 러닝화 정적 데이터베이스 — 진단 엔진(diagnosisEngine.ts)에서 참조하는 신발 목록.
+ * 각 신발은 bestFor/banFor 태그로 사용자 프로필과 매칭되며,
+ * 쿠셔닝/안정성 레벨 등 스펙 정보를 포함한다.
+ */
+
+/** 개별 러닝화의 스펙 및 추천/비추천 태그 구조 */
 export interface Shoe {
   name: string;
   brand: string;
   type: "cushion" | "stability" | "max-cushion" | "speed" | "neutral";
-  widthAvailable: ("표준" | "2E" | "4E")[];
-  bestFor: string[];
-  banFor: string[];
+  widthAvailable: ("표준" | "2E" | "4E")[];  // 제공되는 발볼 사이즈 옵션
+  bestFor: string[];   // 이 신발이 적합한 사용자 태그 (예: "wide-foot", "knee-pain")
+  banFor: string[];    // 이 신발이 부적합한 사용자 태그 (매칭 시 추천에서 제외)
   description: string;
-  cushionLevel: number; // 1-5
-  stabilityLevel: number; // 1-5
-  weightGrams: number;
-  dropMm: number;
+  cushionLevel: number; // 1-5 쿠셔닝 수준
+  stabilityLevel: number; // 1-5 안정성 수준
+  weightGrams: number;  // 무게 (g)
+  dropMm: number;       // 힐-토 드롭 (mm)
   priceRange: string;
 }
 
+/**
+ * 전체 러닝화 목록. 진단 엔진이 이 배열을 순회하며 점수를 매긴다.
+ * 상단 10개는 한국어 데이터, 하단 11개는 영문 데이터(추후 한국어화 필요).
+ */
 export const SHOES_DB: Shoe[] = [
   {
     name: "뉴발란스 프레시폼 1080 v13 (2E)",
@@ -310,6 +322,7 @@ export const SHOES_DB: Shoe[] = [
   },
 ];
 
+/** 진단 엔진의 최종 출력 구조 — 추천 신발, 대안, 비추천, 처방 상세 등을 포함 */
 export interface DiagnosisResult {
   typeName: string;
   typeDescription: string;
