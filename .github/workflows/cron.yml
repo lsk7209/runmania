@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Trigger Vercel Cron
         run: |
-          curl -X POST https://runmaina.vercel.app/api/cron \
+          curl -X POST https://runmania.vercel.app/api/cron \
           -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
           -H "Content-Type: application/json" \
           --fail
