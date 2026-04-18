@@ -529,6 +529,308 @@ const SocialShare = ({ title, slug }: { title: string; slug: string }) => {
   );
 };
 
+/* ─── Content Renderers ─── */
+
+const parseTable = (raw: string) => {
+  const rows = raw.split("\n").filter(Boolean);
+  if (rows.length < 2) return null;
+  const headers = rows[0].split("|");
+  const data = rows.slice(1).map((r) => r.split("|"));
+  return (
+    <div className="my-6 overflow-hidden rounded-xl border border-border">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-secondary/50">
+            {headers.map((h, i) => (
+              <TableHead key={i} className="text-xs font-bold text-foreground">
+                {h.trim()}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.map((row, i) => (
+            <TableRow key={i}>
+              {row.map((cell, j) => (
+                <TableCell key={j} className="text-xs">
+                  {cell.trim()}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
+
+const parseHighlight = (raw: string) => {
+  const items = raw
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return (
+    <div className="my-6 grid gap-3 sm:grid-cols-2">
+      {items.map((item, i) => {
+        const [label, value] = item.includes(":")
+          ? [
+              item.split(":")[0].trim(),
+              item.split(":").slice(1).join(":").trim(),
+            ]
+          : [item, ""];
+        return (
+          <Card key={i} className="border-primary/20 bg-primary/5">
+            <CardContent className="flex items-center gap-3 p-4">
+              <TrendingUp className="h-5 w-5 shrink-0 text-primary" />
+              <div>
+                {value ? (
+                  <>
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="text-sm font-bold text-foreground">{value}</p>
+                  </>
+                ) : (
+                  <p className="text-sm font-semibold text-foreground">
+                    {label}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+};
+
+const parseChecklist = (raw: string) => {
+  const items = raw.split("\n").filter(Boolean);
+  return (
+    <div className="my-6 space-y-2 rounded-xl border border-border bg-card p-4">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-start gap-2.5">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <span className="text-sm text-secondary-foreground">
+            {item.trim()}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const parseQuote = (raw: string) => {
+  const [text, author] = raw.includes("—")
+    ? raw.split("—").map((s) => s.trim())
+    : [raw.trim(), ""];
+  return (
+    <blockquote className="my-6 border-l-4 border-primary/50 bg-primary/5 rounded-r-xl py-4 px-5">
+      <Quote className="mb-2 h-5 w-5 text-primary/40" />
+      <p className="text-sm italic leading-relaxed text-foreground">
+        {renderTextWithLinks(text)}
+      </p>
+      {author && (
+        <cite className="mt-2 block text-xs text-muted-foreground not-italic">
+          — {renderTextWithLinks(author)}
+        </cite>
+      )}
+    </blockquote>
+  );
+};
+
+const parseInfoBox = (raw: string) => {
+  const [title, ...bodyParts] = raw.split("\n").filter(Boolean);
+  return (
+    <div className="my-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <Info className="h-4 w-4 shrink-0 text-blue-400" />
+        <span className="text-sm font-bold text-foreground">{title}</span>
+      </div>
+      {bodyParts.length > 0 && (
+        <div className="ml-6 space-y-1">
+          {bodyParts.map((line, i) => (
+            <p key={i} className="text-sm text-secondary-foreground">
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const parseWarning = (raw: string) => {
+  const [title, ...bodyParts] = raw.split("\n").filter(Boolean);
+  return (
+    <div className="my-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
+        <span className="text-sm font-bold text-foreground">{title}</span>
+      </div>
+      {bodyParts.length > 0 && (
+        <div className="ml-6 space-y-1">
+          {bodyParts.map((line, i) => (
+            <p key={i} className="text-sm text-secondary-foreground">
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const parseTip = (raw: string) => {
+  const [title, ...bodyParts] = raw.split("\n").filter(Boolean);
+  return (
+    <div className="my-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
+        <span className="text-sm font-bold text-foreground">{title}</span>
+      </div>
+      {bodyParts.length > 0 && (
+        <div className="ml-6 space-y-1">
+          {bodyParts.map((line, i) => (
+            <p key={i} className="text-sm text-secondary-foreground">
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const parseComparison = (raw: string) => {
+  const lines = raw.split("\n").filter(Boolean);
+  if (lines.length < 2) return null;
+  const [leftTitle, rightTitle] = lines[0].split("|").map((s) => s.trim());
+  const items = lines.slice(1).map((line) => {
+    const [left, right] = line.split("|").map((s) => s.trim());
+    return { left, right };
+  });
+  return (
+    <div className="my-6 grid grid-cols-2 gap-3">
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Swords className="h-4 w-4 text-primary" />
+          <h4 className="text-sm font-bold">{leftTitle}</h4>
+        </div>
+        <ul className="space-y-1.5">
+          {items.map((item, i) => (
+            <li key={i} className="text-xs text-secondary-foreground">
+              • {item.left}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Swords className="h-4 w-4 text-primary" />
+          <h4 className="text-sm font-bold">{rightTitle}</h4>
+        </div>
+        <ul className="space-y-1.5">
+          {items.map((item, i) => (
+            <li key={i} className="text-xs text-secondary-foreground">
+              • {item.right}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+const renderTextWithLinks = (text: string): React.ReactNode => {
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = linkRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    const isExternal = match[2].startsWith("http");
+    if (isExternal) {
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2 hover:text-primary/80"
+        >
+          {match[1]}
+        </a>,
+      );
+    } else {
+      parts.push(
+        <Link
+          key={match.index}
+          to={match[2]}
+          className="text-primary underline underline-offset-2 hover:text-primary/80"
+        >
+          {match[1]}
+        </Link>,
+      );
+    }
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts.length > 0 ? <>{parts}</> : text;
+};
+
+const renderContent = (paragraph: string, i: number) => {
+  if (paragraph.startsWith("[TABLE]") && paragraph.endsWith("[/TABLE]"))
+    return <div key={i}>{parseTable(paragraph.slice(7, -8))}</div>;
+  if (paragraph.startsWith("[HIGHLIGHT]") && paragraph.endsWith("[/HIGHLIGHT]"))
+    return <div key={i}>{parseHighlight(paragraph.slice(11, -12))}</div>;
+  if (paragraph.startsWith("[CHECKLIST]") && paragraph.endsWith("[/CHECKLIST]"))
+    return <div key={i}>{parseChecklist(paragraph.slice(11, -12))}</div>;
+  if (paragraph.startsWith("[QUOTE]") && paragraph.endsWith("[/QUOTE]"))
+    return <div key={i}>{parseQuote(paragraph.slice(7, -8))}</div>;
+  if (paragraph.startsWith("[INFO]") && paragraph.endsWith("[/INFO]"))
+    return <div key={i}>{parseInfoBox(paragraph.slice(6, -7))}</div>;
+  if (paragraph.startsWith("[WARNING]") && paragraph.endsWith("[/WARNING]"))
+    return <div key={i}>{parseWarning(paragraph.slice(9, -10))}</div>;
+  if (paragraph.startsWith("[TIP]") && paragraph.endsWith("[/TIP]"))
+    return <div key={i}>{parseTip(paragraph.slice(5, -6))}</div>;
+  if (
+    paragraph.startsWith("[COMPARISON]") &&
+    paragraph.endsWith("[/COMPARISON]")
+  )
+    return <div key={i}>{parseComparison(paragraph.slice(12, -13))}</div>;
+  if (paragraph.startsWith("## "))
+    return (
+      <h2
+        key={i}
+        id={`section-${i}`}
+        className="mt-8 mb-3 text-xl font-bold text-foreground scroll-mt-20"
+      >
+        {paragraph.replace("## ", "")}
+      </h2>
+    );
+  if (paragraph.startsWith("**") || paragraph.startsWith("- "))
+    return (
+      <div
+        key={i}
+        className="text-sm leading-relaxed text-secondary-foreground whitespace-pre-line"
+      >
+        {paragraph.split("**").map((part, j) =>
+          j % 2 === 1 ? (
+            <strong key={j} className="text-foreground">
+              {part}
+            </strong>
+          ) : (
+            <span key={j}>{renderTextWithLinks(part)}</span>
+          ),
+        )}
+      </div>
+    );
+  return (
+    <p key={i} className="text-sm leading-relaxed text-secondary-foreground">
+      {renderTextWithLinks(paragraph)}
+    </p>
+  );
+};
+
 /* ─── Blog Detail ─── */
 
 const BlogDetail = ({ slug }: { slug: string }) => {
