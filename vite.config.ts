@@ -124,10 +124,7 @@ function indexNowPlugin(): Plugin {
           `✅ IndexNow ping sent: ${indexNowRes.status} (${urlList.length} URLs → Bing/Naver/Yandex)`,
         );
 
-        // 2. Google sitemap ping
-        const googlePingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(`${BASE_URL}/sitemap.xml`)}`;
-        const googleRes = await fetch(googlePingUrl);
-        console.log(`✅ Google sitemap ping: ${googleRes.status}`);
+        // Google ping은 2023년 deprecate됨 → GSC에서 직접 제출 권장
       } catch (e) {
         console.warn("⚠️ IndexNow ping failed (build continues):", e);
       }
