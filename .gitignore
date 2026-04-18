@@ -25,3 +25,4 @@ dist-ssr
 .vercel
 .omx/
 test-results/
+.env*.local
