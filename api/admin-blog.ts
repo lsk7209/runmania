@@ -94,7 +94,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case "create": {
         const normalized = validatePostMutation(data);
         if (!normalized.ok) {
-          return res.status(normalized.status).json({ error: normalized.error });
+          return res
+            .status(normalized.status)
+            .json({ error: normalized.error });
         }
 
         const post = normalized.value;
@@ -128,7 +130,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case "update": {
         const normalized = validatePostMutation(data);
         if (!normalized.ok) {
-          return res.status(normalized.status).json({ error: normalized.error });
+          return res
+            .status(normalized.status)
+            .json({ error: normalized.error });
         }
 
         const post = normalized.value;
@@ -169,7 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       case "publish": {
         const result = await tursoClient.execute({
-          sql: "SELECT id, workflow_status FROM blog_posts WHERE id = ?",
+          sql: "SELECT id, workflow_status, generation_meta FROM blog_posts WHERE id = ?",
           args: [data.id],
         });
 
@@ -179,7 +183,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const post = result.rows[0] as PublishWorkflowRow;
         if (post.workflow_status !== "approved") {
-          return res.status(409).json({ error: "Only approved posts can be published" });
+          return res
+            .status(409)
+            .json({ error: "Only approved posts can be published" });
+        }
+
+        // 품질 게이트 미통과 시 강제 발행(force)이 아니면 차단
+        if (!data.force) {
+          try {
+            const meta =
+              typeof post.generation_meta === "string"
+                ? JSON.parse(post.generation_meta)
+                : post.generation_meta;
+            if (meta?.qualityGate?.passed === false) {
+              return res.status(409).json({
+                error: "Quality gate failed. Use force:true to override.",
+                qualityGate: meta.qualityGate,
+                requiresForce: true,
+              });
+            }
+          } catch {
+            // generation_meta 파싱 실패 시 발행 허용
+          }
         }
 
         await tursoClient.execute({
@@ -212,15 +237,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const post = result.rows[0] as PublishWorkflowRow;
-        if (post.status === "published" && data.workflow_status !== "approved") {
+        if (
+          post.status === "published" &&
+          data.workflow_status !== "approved"
+        ) {
           return res.status(409).json({
-            error: "Published posts must be moved back to draft before changing workflow",
+            error:
+              "Published posts must be moved back to draft before changing workflow",
           });
         }
 
-        if (post.status === "scheduled" && data.workflow_status !== "approved") {
+        if (
+          post.status === "scheduled" &&
+          data.workflow_status !== "approved"
+        ) {
           return res.status(409).json({
-            error: "Scheduled posts must stay approved or be moved back to draft first",
+            error:
+              "Scheduled posts must stay approved or be moved back to draft first",
           });
         }
 
@@ -255,19 +288,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           createdIds.push(id);
         }
 
-        return res.status(200).json({ created: titles.length, ids: createdIds });
+        return res
+          .status(200)
+          .json({ created: titles.length, ids: createdIds });
       }
 
       case "bulk_pipeline": {
         const titles = Array.isArray(data.titles)
-          ? data.titles.map((item: unknown) => String(item).trim()).filter(Boolean)
+          ? data.titles
+              .map((item: unknown) => String(item).trim())
+              .filter(Boolean)
           : [];
 
         if (titles.length === 0) {
-          return res.status(400).json({ error: "At least one title is required" });
+          return res
+            .status(400)
+            .json({ error: "At least one title is required" });
         }
 
-        const contentType = String(data.content_type ?? "blog").trim() || "blog";
+        const contentType =
+          String(data.content_type ?? "blog").trim() || "blog";
         const generationMeta = {
           ...defaultGenerationMeta(),
           ...(isPlainObject(data.generation_meta) ? data.generation_meta : {}),
@@ -275,17 +315,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         };
         const autoGenerate = data.auto_generate !== false;
         const autoSchedule = data.auto_schedule !== false;
-        const firstScheduledAt = autoSchedule ? normalizeScheduledAt(data.first_scheduled_at) : null;
+        const firstScheduledAt = autoSchedule
+          ? normalizeScheduledAt(data.first_scheduled_at)
+          : null;
         const scheduleIntervalHours = autoSchedule
-          ? normalizePositiveNumber(data.schedule_interval_hours) ?? (await getDefaultPublishIntervalHours())
+          ? (normalizePositiveNumber(data.schedule_interval_hours) ??
+            (await getDefaultPublishIntervalHours()))
           : null;
 
         if (autoSchedule && !firstScheduledAt) {
-          return res.status(400).json({ error: "first_scheduled_at is required for auto scheduling" });
+          return res
+            .status(400)
+            .json({
+              error: "first_scheduled_at is required for auto scheduling",
+            });
         }
 
         if (autoSchedule && !scheduleIntervalHours) {
-          return res.status(400).json({ error: "schedule_interval_hours must be greater than 0" });
+          return res
+            .status(400)
+            .json({ error: "schedule_interval_hours must be greater than 0" });
         }
 
         const createdIds: string[] = [];
@@ -326,7 +375,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               if (generationResult.qualityGate.passed) {
                 workflowStatus = "approved";
                 if (autoSchedule && firstScheduledAt && scheduleIntervalHours) {
-                  scheduledAt = addHours(firstScheduledAt, scheduleIntervalHours * index);
+                  scheduledAt = addHours(
+                    firstScheduledAt,
+                    scheduleIntervalHours * index,
+                  );
                   status = "scheduled";
                 }
 
@@ -338,7 +390,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 });
               } else {
                 workflowStatus = "reviewing";
-                error = generationResult.qualityGate.blockers.join(" | ") || "Quality gate failed";
+                error =
+                  generationResult.qualityGate.blockers.join(" | ") ||
+                  "Quality gate failed";
               }
             } catch (bulkError: unknown) {
               error = getErrorMessage(bulkError, "Failed to generate content");
@@ -358,8 +412,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         return res.status(200).json({
           created: createdIds.length,
-          generated: results.filter((item) => item.workflow_status === "approved").length,
-          scheduled: results.filter((item) => item.status === "scheduled").length,
+          generated: results.filter(
+            (item) => item.workflow_status === "approved",
+          ).length,
+          scheduled: results.filter((item) => item.status === "scheduled")
+            .length,
           failed: results.filter((item) => item.error).length,
           ids: createdIds,
           results,
@@ -406,13 +463,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         );
         const logs = result.rows.map((row) => ({
           ...row,
-          requested_prompt: tryParse((row as Record<string, unknown>).requested_prompt),
+          requested_prompt: tryParse(
+            (row as Record<string, unknown>).requested_prompt,
+          ),
         }));
         return res.status(200).json(logs);
       }
 
       case "get_settings": {
-        const result = await tursoClient.execute("SELECT * FROM app_settings WHERE id = 1");
+        const result = await tursoClient.execute(
+          "SELECT * FROM app_settings WHERE id = 1",
+        );
         const row = result.rows[0] as SettingsRow | undefined;
         return res.status(200).json(
           row
@@ -432,7 +493,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               publish_interval_hours=excluded.publish_interval_hours,
               auto_publish_enabled=excluded.auto_publish_enabled,
               updated_at=CURRENT_TIMESTAMP`,
-          args: [data.publish_interval_hours ?? 24, data.auto_publish_enabled ? 1 : 0],
+          args: [
+            data.publish_interval_hours ?? 24,
+            data.auto_publish_enabled ? 1 : 0,
+          ],
         });
         return res.status(200).json({ success: true });
       }
@@ -442,7 +506,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch (error: unknown) {
     console.error(`[admin-blog] action=${action}`, error);
-    return res.status(500).json({ error: getErrorMessage(error, "Internal Server Error") });
+    return res
+      .status(500)
+      .json({ error: getErrorMessage(error, "Internal Server Error") });
   }
 }
 
@@ -494,7 +560,9 @@ function defaultGenerationMeta() {
 }
 
 async function getDefaultPublishIntervalHours() {
-  const result = await tursoClient.execute("SELECT publish_interval_hours FROM app_settings WHERE id = 1");
+  const result = await tursoClient.execute(
+    "SELECT publish_interval_hours FROM app_settings WHERE id = 1",
+  );
   const row = result.rows[0] as SettingsRow | undefined;
   return normalizePositiveNumber(row?.publish_interval_hours) ?? 24;
 }
@@ -503,7 +571,8 @@ function validatePostMutation(data: unknown): PostMutationValidation {
   const source = isPlainObject(data) ? data : {};
   const status = normalizeStatus(source.status);
   const workflowStatus = normalizeWorkflowStatus(source.workflow_status);
-  const scheduledAt = status === "scheduled" ? normalizeScheduledAt(source.scheduled_at) : null;
+  const scheduledAt =
+    status === "scheduled" ? normalizeScheduledAt(source.scheduled_at) : null;
 
   if (status === "scheduled" && workflowStatus !== "approved") {
     return {
@@ -531,12 +600,16 @@ function validatePostMutation(data: unknown): PostMutationValidation {
       tags: Array.isArray(source.tags) ? source.tags : [],
       read_time: normalizeNullableString(source.read_time),
       hero_image: normalizeNullableString(source.hero_image),
-      related_slugs: Array.isArray(source.related_slugs) ? source.related_slugs : [],
+      related_slugs: Array.isArray(source.related_slugs)
+        ? source.related_slugs
+        : [],
       faq: Array.isArray(source.faq) ? source.faq : [],
       status,
       content_type: String(source.content_type ?? "blog").trim() || "blog",
       workflow_status: workflowStatus,
-      generation_meta: isPlainObject(source.generation_meta) ? source.generation_meta : defaultGenerationMeta(),
+      generation_meta: isPlainObject(source.generation_meta)
+        ? source.generation_meta
+        : defaultGenerationMeta(),
       scheduled_at: scheduledAt,
     },
   };
@@ -546,7 +619,9 @@ function normalizeStatus(value: unknown): PostMutationInput["status"] {
   return value === "scheduled" || value === "published" ? value : "draft";
 }
 
-function normalizeWorkflowStatus(value: unknown): PostMutationInput["workflow_status"] {
+function normalizeWorkflowStatus(
+  value: unknown,
+): PostMutationInput["workflow_status"] {
   return value === "reviewing" || value === "approved" ? value : "idea";
 }
 

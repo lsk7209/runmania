@@ -16,11 +16,23 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
@@ -28,7 +40,13 @@ import { toast } from "@/hooks/use-toast";
 type ContentType = "blog" | "review" | "utility";
 type WorkflowStatus = "idea" | "reviewing" | "approved";
 type PublishStatus = "draft" | "scheduled" | "published";
-type SearchIntent = "auto" | "informational" | "commercial" | "transactional" | "comparison" | "local";
+type SearchIntent =
+  | "auto"
+  | "informational"
+  | "commercial"
+  | "transactional"
+  | "comparison"
+  | "local";
 
 type InternalLinkSuggestion = {
   slug: string;
@@ -175,12 +193,18 @@ const adminCall = async (password: string, action: string, data?: unknown) => {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+    throw new Error(
+      payload.message || payload.error || `HTTP ${response.status}`,
+    );
   }
   return payload;
 };
 
-const generateContent = async (password: string, postId: string, options?: Partial<GenerationMeta>) => {
+const generateContent = async (
+  password: string,
+  postId: string,
+  options?: Partial<GenerationMeta>,
+) => {
   const response = await fetch("/api/admin-generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -189,7 +213,9 @@ const generateContent = async (password: string, postId: string, options?: Parti
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+    throw new Error(
+      payload.message || payload.error || `HTTP ${response.status}`,
+    );
   }
   return payload;
 };
@@ -238,13 +264,19 @@ const Admin = () => {
   const [bulkContentType, setBulkContentType] = useState<ContentType>("blog");
   const [bulkAutoGenerate, setBulkAutoGenerate] = useState(true);
   const [bulkAutoSchedule, setBulkAutoSchedule] = useState(true);
-  const [bulkScheduleStartAt, setBulkScheduleStartAt] = useState(defaultBulkScheduleStart);
-  const [bulkScheduleIntervalHours, setBulkScheduleIntervalHours] = useState(24);
+  const [bulkScheduleStartAt, setBulkScheduleStartAt] = useState(
+    defaultBulkScheduleStart,
+  );
+  const [bulkScheduleIntervalHours, setBulkScheduleIntervalHours] =
+    useState(24);
   const [bulkGenerationMeta, setBulkGenerationMeta] = useState<GenerationMeta>({
     ...defaultGenerationMeta(),
     contentType: "blog",
   });
-  const [settings, setSettings] = useState({ publish_interval_hours: 24, auto_publish_enabled: true });
+  const [settings, setSettings] = useState({
+    publish_interval_hours: 24,
+    auto_publish_enabled: true,
+  });
   const [form, setForm] = useState(emptyPost());
 
   const loadPosts = useCallback(async () => {
@@ -270,7 +302,11 @@ const Admin = () => {
     try {
       await Promise.all([loadPosts(), loadLogs(), loadSettings()]);
     } catch (error: unknown) {
-      toast({ title: "Failed to load admin data", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Failed to load admin data",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -307,7 +343,11 @@ const Admin = () => {
   useEffect(() => {
     if (authenticated) {
       loadPosts().catch((error: unknown) => {
-        toast({ title: "Failed to refresh posts", description: getErrorMessage(error), variant: "destructive" });
+        toast({
+          title: "Failed to refresh posts",
+          description: getErrorMessage(error),
+          variant: "destructive",
+        });
       });
     }
   }, [activeTab, authenticated, loadPosts]);
@@ -320,7 +360,11 @@ const Admin = () => {
       setAuthenticated(true);
       toast({ title: "Admin login successful" });
     } catch (error: unknown) {
-      toast({ title: "Login failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Login failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -345,7 +389,9 @@ const Admin = () => {
       heroImage: post.hero_image || "",
       relatedSlugs: (post.related_slugs || []).join(", "),
       faq: Array.isArray(post.faq)
-        ? post.faq.map((item) => `Q: ${item.question}\nA: ${item.answer}`).join("\n\n")
+        ? post.faq
+            .map((item) => `Q: ${item.question}\nA: ${item.answer}`)
+            .join("\n\n")
         : "",
       status: post.status,
       scheduledAt: toDatetimeLocalValue(post.scheduled_at),
@@ -360,11 +406,17 @@ const Admin = () => {
     setShowEditor(true);
   };
 
-  const updateForm = <K extends keyof ReturnType<typeof emptyPost>>(key: K, value: ReturnType<typeof emptyPost>[K]) => {
+  const updateForm = <K extends keyof ReturnType<typeof emptyPost>>(
+    key: K,
+    value: ReturnType<typeof emptyPost>[K],
+  ) => {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
-  const updateGenerationMeta = <K extends keyof GenerationMeta>(key: K, value: GenerationMeta[K]) => {
+  const updateGenerationMeta = <K extends keyof GenerationMeta>(
+    key: K,
+    value: GenerationMeta[K],
+  ) => {
     setForm((current) => ({
       ...current,
       generationMeta: {
@@ -374,7 +426,10 @@ const Admin = () => {
     }));
   };
 
-  const updateBulkGenerationMeta = <K extends keyof GenerationMeta>(key: K, value: GenerationMeta[K]) => {
+  const updateBulkGenerationMeta = <K extends keyof GenerationMeta>(
+    key: K,
+    value: GenerationMeta[K],
+  ) => {
     setBulkGenerationMeta((current) => ({
       ...current,
       [key]: value,
@@ -384,7 +439,8 @@ const Admin = () => {
   const handleSave = async () => {
     if (!form.title.trim()) return;
 
-    const scheduledAt = form.status === "scheduled" ? toIsoDatetime(form.scheduledAt) : null;
+    const scheduledAt =
+      form.status === "scheduled" ? toIsoDatetime(form.scheduledAt) : null;
     if (form.status === "scheduled" && form.workflowStatus !== "approved") {
       toast({
         title: "Approval required",
@@ -439,7 +495,11 @@ const Admin = () => {
       setShowEditor(false);
       await refreshAll();
     } catch (error: unknown) {
-      toast({ title: "Save failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Save failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -449,7 +509,8 @@ const Admin = () => {
     if (post.status === "published") {
       toast({
         title: "Unpublish first",
-        description: "Move the live post back to draft before generating a new AI draft.",
+        description:
+          "Move the live post back to draft before generating a new AI draft.",
         variant: "destructive",
       });
       return;
@@ -459,10 +520,17 @@ const Admin = () => {
     setLoading(true);
     try {
       await generateContent(password, post.id, post.generation_meta || {});
-      toast({ title: "AI draft generated", description: "Workflow moved to Reviewing." });
+      toast({
+        title: "AI draft generated",
+        description: "Workflow moved to Reviewing.",
+      });
       await refreshAll();
     } catch (error: unknown) {
-      toast({ title: "AI generation failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "AI generation failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
       finishPostAction(post.id);
@@ -479,14 +547,18 @@ const Admin = () => {
       toast({ title: "Post deleted" });
       await refreshAll();
     } catch (error: unknown) {
-      toast({ title: "Delete failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Delete failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
       finishPostAction(id);
     }
   };
 
-  const handlePublish = async (post: BlogPost) => {
+  const handlePublish = async (post: BlogPost, force = false) => {
     if (post.workflow_status !== "approved") {
       toast({
         title: "Approval required",
@@ -499,11 +571,34 @@ const Admin = () => {
     setBusyPostId(post.id);
     setLoading(true);
     try {
-      await adminCall(password, "publish", { id: post.id });
+      await adminCall(password, "publish", { id: post.id, force });
       toast({ title: "Post published" });
       await refreshAll();
     } catch (error: unknown) {
-      toast({ title: "Publish failed", description: getErrorMessage(error), variant: "destructive" });
+      const msg = getErrorMessage(error);
+      // 품질 게이트 실패 → 강제 발행 여부 확인
+      if (
+        msg.includes("Quality gate failed") ||
+        msg.includes("requiresForce")
+      ) {
+        const ok = window.confirm(
+          "⚠️ 품질 게이트 미통과 포스트입니다.\n그래도 강제 발행하시겠습니까?",
+        );
+        if (ok) {
+          await handlePublish(post, true);
+          return;
+        }
+        toast({
+          title: "발행 취소됨",
+          description: "품질 게이트 미통과로 발행이 취소됐습니다.",
+        });
+      } else {
+        toast({
+          title: "Publish failed",
+          description: msg,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
       finishPostAction(post.id);
@@ -518,18 +613,26 @@ const Admin = () => {
       toast({ title: "Moved back to draft" });
       await refreshAll();
     } catch (error: unknown) {
-      toast({ title: "Unpublish failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Unpublish failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
       finishPostAction(id);
     }
   };
 
-  const handleWorkflowUpdate = async (post: BlogPost, workflowStatus: WorkflowStatus) => {
+  const handleWorkflowUpdate = async (
+    post: BlogPost,
+    workflowStatus: WorkflowStatus,
+  ) => {
     if (post.status === "published" && workflowStatus !== "approved") {
       toast({
         title: "Unpublish first",
-        description: "Move the live post back to draft before sending it to review.",
+        description:
+          "Move the live post back to draft before sending it to review.",
         variant: "destructive",
       });
       return;
@@ -538,11 +641,18 @@ const Admin = () => {
     setBusyPostId(post.id);
     setLoading(true);
     try {
-      await adminCall(password, "update_workflow", { id: post.id, workflow_status: workflowStatus });
+      await adminCall(password, "update_workflow", {
+        id: post.id,
+        workflow_status: workflowStatus,
+      });
       toast({ title: `Workflow set to ${workflowLabels[workflowStatus]}` });
       await refreshAll();
     } catch (error: unknown) {
-      toast({ title: "Workflow update failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Workflow update failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
       finishPostAction(post.id);
@@ -587,22 +697,30 @@ const Admin = () => {
           generation_meta: generationMeta,
           auto_generate: true,
           auto_schedule: bulkAutoSchedule,
-          first_scheduled_at: bulkAutoSchedule ? toIsoDatetime(bulkScheduleStartAt) : null,
-          schedule_interval_hours: bulkAutoSchedule ? bulkScheduleIntervalHours : null,
+          first_scheduled_at: bulkAutoSchedule
+            ? toIsoDatetime(bulkScheduleStartAt)
+            : null,
+          schedule_interval_hours: bulkAutoSchedule
+            ? bulkScheduleIntervalHours
+            : null,
         })) as BulkPipelineResponse;
 
         const description = bulkAutoSchedule
           ? `${result.generated} generated, ${result.scheduled} scheduled, ${result.failed} failed.`
           : `${result.generated} generated, ${result.failed} failed.`;
         toast({
-          title: bulkAutoSchedule ? "Bulk AI generation and scheduling complete" : "Bulk AI generation complete",
+          title: bulkAutoSchedule
+            ? "Bulk AI generation and scheduling complete"
+            : "Bulk AI generation complete",
           description,
         });
         if (result.results?.some((item) => item.error)) {
           const firstError = result.results.find((item) => item.error)?.error;
           toast({
             title: "Some posts need manual review",
-            description: firstError || "One or more generated posts did not pass the quality gate.",
+            description:
+              firstError ||
+              "One or more generated posts did not pass the quality gate.",
             variant: "destructive",
           });
         }
@@ -612,14 +730,19 @@ const Admin = () => {
       resetBulkForm();
       await refreshAll();
     } catch (error: unknown) {
-      toast({ title: "Bulk create failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Bulk create failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleSeedData = async () => {
-    if (!window.confirm("Import hardcoded blog seed data into the database?")) return;
+    if (!window.confirm("Import hardcoded blog seed data into the database?"))
+      return;
 
     setLoading(true);
     try {
@@ -628,7 +751,11 @@ const Admin = () => {
       toast({ title: "Seed data imported" });
       await refreshAll();
     } catch (error: unknown) {
-      toast({ title: "Seed import failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Seed import failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -641,7 +768,11 @@ const Admin = () => {
       toast({ title: "Settings updated" });
       setShowSettings(false);
     } catch (error: unknown) {
-      toast({ title: "Settings update failed", description: getErrorMessage(error), variant: "destructive" });
+      toast({
+        title: "Settings update failed",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -675,8 +806,12 @@ const Admin = () => {
 
   const totalPosts = posts.length;
   const draftCount = posts.filter((post) => post.status === "draft").length;
-  const publishedCount = posts.filter((post) => post.status === "published").length;
-  const reviewingCount = posts.filter((post) => post.workflow_status === "reviewing").length;
+  const publishedCount = posts.filter(
+    (post) => post.status === "published",
+  ).length;
+  const reviewingCount = posts.filter(
+    (post) => post.workflow_status === "reviewing",
+  ).length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 pt-24">
@@ -684,7 +819,8 @@ const Admin = () => {
         <div>
           <h1 className="text-2xl font-bold">Content Admin</h1>
           <p className="text-sm text-muted-foreground">
-            Manage AI generation for blog, review, and utility content with review workflow and logs.
+            Manage AI generation for blog, review, and utility content with
+            review workflow and logs.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -692,7 +828,11 @@ const Admin = () => {
             <Upload className="mr-1 h-4 w-4" />
             Seed import
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setShowSettings(true)}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSettings(true)}
+          >
             <Settings className="mr-1 h-4 w-4" />
             Publish settings
           </Button>
@@ -711,14 +851,23 @@ const Admin = () => {
         <StatsCard label="Total" count={totalPosts} icon={FileText} />
         <StatsCard label="Drafts" count={draftCount} icon={Edit} />
         <StatsCard label="Reviewing" count={reviewingCount} icon={Clock} />
-        <StatsCard label="Published" count={publishedCount} icon={CheckCircle2} />
+        <StatsCard
+          label="Published"
+          count={publishedCount}
+          icon={CheckCircle2}
+        />
       </div>
       <div className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
         <Card>
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <CardTitle>Content Queue</CardTitle>
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "all" | PublishStatus)}>
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) =>
+                  setActiveTab(value as "all" | PublishStatus)
+                }
+              >
                 <TabsList>
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="draft">Draft</TabsTrigger>
@@ -731,9 +880,13 @@ const Admin = () => {
           </CardHeader>
           <CardContent>
             {loading && posts.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Loading posts...</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Loading posts...
+              </p>
             ) : posts.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">No posts found.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No posts found.
+              </p>
             ) : (
               <Table>
                 <TableHeader>
@@ -751,17 +904,28 @@ const Admin = () => {
                     <TableRow key={post.id}>
                       <TableCell>
                         <div>
-                          <p className="line-clamp-1 font-medium">{post.title}</p>
-                          <p className="text-xs text-muted-foreground">/{post.slug}</p>
+                          <p className="line-clamp-1 font-medium">
+                            {post.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            /{post.slug}
+                          </p>
                           {getRefinedTitle(post) ? (
                             <p className="text-xs text-muted-foreground">
-                              Refined: <span className="text-foreground">{getRefinedTitle(post)}</span>
+                              Refined:{" "}
+                              <span className="text-foreground">
+                                {getRefinedTitle(post)}
+                              </span>
                             </p>
                           ) : null}
                           {getPrimaryKeyword(post) || getSearchIntent(post) ? (
                             <p className="text-xs text-muted-foreground">
-                              {getPrimaryKeyword(post) ? `Keyword: ${getPrimaryKeyword(post)}` : "Keyword: n/a"}
-                              {getSearchIntent(post) ? ` / Intent: ${searchIntentLabels[getSearchIntent(post)!]}` : ""}
+                              {getPrimaryKeyword(post)
+                                ? `Keyword: ${getPrimaryKeyword(post)}`
+                                : "Keyword: n/a"}
+                              {getSearchIntent(post)
+                                ? ` / Intent: ${searchIntentLabels[getSearchIntent(post)!]}`
+                                : ""}
                             </p>
                           ) : null}
                           {post.status === "scheduled" && post.scheduled_at ? (
@@ -772,25 +936,52 @@ const Admin = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{contentTypeLabels[post.content_type] || post.content_type}</Badge>
+                        <Badge variant="secondary">
+                          {contentTypeLabels[post.content_type] ||
+                            post.content_type}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={post.status === "published" ? "default" : "outline"}>
+                        <Badge
+                          variant={
+                            post.status === "published" ? "default" : "outline"
+                          }
+                        >
                           {statusLabels[post.status]}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={post.workflow_status === "approved" ? "default" : "outline"}>
+                        <Badge
+                          variant={
+                            post.workflow_status === "approved"
+                              ? "default"
+                              : "outline"
+                          }
+                        >
                           {workflowLabels[post.workflow_status]}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         <div>{post.generation_count || 0} runs</div>
-                        <div>{post.last_generated_at ? formatDate(post.last_generated_at) : "Not generated"}</div>
+                        <div>
+                          {post.last_generated_at
+                            ? formatDate(post.last_generated_at)
+                            : "Not generated"}
+                        </div>
                         {getQualityGate(post) ? (
                           <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <Badge variant={getQualityGate(post)!.passed ? "default" : "destructive"}>
-                              Quality {getQualityGate(post)!.passed ? "Passed" : "Review"} ({getQualityGate(post)!.score})
+                            <Badge
+                              variant={
+                                getQualityGate(post)!.passed
+                                  ? "default"
+                                  : "destructive"
+                              }
+                            >
+                              Quality{" "}
+                              {getQualityGate(post)!.passed
+                                ? "Passed"
+                                : "Review"}{" "}
+                              ({getQualityGate(post)!.score})
                             </Badge>
                             <span>{getSourceCount(post)} sources</span>
                             <span>{getInternalLinkCount(post)} links</span>
@@ -822,15 +1013,26 @@ const Admin = () => {
                                 ? "Unpublish before generating a new AI draft"
                                 : "Generate AI"
                             }
-                            disabled={loading || busyPostId === post.id || post.status === "published"}
+                            disabled={
+                              loading ||
+                              busyPostId === post.id ||
+                              post.status === "published"
+                            }
                           >
                             <Sparkles className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleWorkflowUpdate(post, "reviewing")}
-                            disabled={loading || busyPostId === post.id || post.workflow_status === "reviewing" || post.status === "published"}
+                            onClick={() =>
+                              handleWorkflowUpdate(post, "reviewing")
+                            }
+                            disabled={
+                              loading ||
+                              busyPostId === post.id ||
+                              post.workflow_status === "reviewing" ||
+                              post.status === "published"
+                            }
                             title={
                               post.status === "published"
                                 ? "Unpublish before moving a live post to review"
@@ -842,8 +1044,14 @@ const Admin = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleWorkflowUpdate(post, "approved")}
-                            disabled={loading || busyPostId === post.id || post.workflow_status === "approved"}
+                            onClick={() =>
+                              handleWorkflowUpdate(post, "approved")
+                            }
+                            disabled={
+                              loading ||
+                              busyPostId === post.id ||
+                              post.workflow_status === "approved"
+                            }
                           >
                             Approve
                           </Button>
@@ -857,7 +1065,11 @@ const Admin = () => {
                                   ? "Publish"
                                   : "Approve before publishing"
                               }
-                              disabled={loading || busyPostId === post.id || post.workflow_status !== "approved"}
+                              disabled={
+                                loading ||
+                                busyPostId === post.id ||
+                                post.workflow_status !== "approved"
+                              }
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -897,42 +1109,69 @@ const Admin = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {logs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No generation logs yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No generation logs yet.
+              </p>
             ) : (
               logs.map((log) => (
                 <div key={log.id} className="rounded-lg border p-3">
                   <div className="mb-1 flex items-center justify-between gap-2">
-                    <Badge variant={log.status === "completed" ? "default" : log.status === "failed" ? "destructive" : "outline"}>
+                    <Badge
+                      variant={
+                        log.status === "completed"
+                          ? "default"
+                          : log.status === "failed"
+                            ? "destructive"
+                            : "outline"
+                      }
+                    >
                       {log.status}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">{formatDate(log.created_at)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(log.created_at)}
+                    </span>
                   </div>
-                  <p className="text-sm font-medium">{log.generated_title || "Pending title"}</p>
+                  <p className="text-sm font-medium">
+                    {log.generated_title || "Pending title"}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {log.content_type ? contentTypeLabels[log.content_type] : "Unknown"} /{" "}
-                    {log.workflow_status ? workflowLabels[log.workflow_status] : "N/A"}
+                    {log.content_type
+                      ? contentTypeLabels[log.content_type]
+                      : "Unknown"}{" "}
+                    /{" "}
+                    {log.workflow_status
+                      ? workflowLabels[log.workflow_status]
+                      : "N/A"}
                   </p>
                   {"template" in log.requested_prompt ? (
                     <>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Template: {String(log.requested_prompt.template || "guide")} / Tone:{" "}
-                        {String(log.requested_prompt.tone || "expert")}
+                        Template:{" "}
+                        {String(log.requested_prompt.template || "guide")} /
+                        Tone: {String(log.requested_prompt.tone || "expert")}
                       </p>
-                      {"refinedTitle" in log.requested_prompt && log.requested_prompt.refinedTitle ? (
+                      {"refinedTitle" in log.requested_prompt &&
+                      log.requested_prompt.refinedTitle ? (
                         <p className="mt-1 text-xs text-muted-foreground">
                           Refined: {String(log.requested_prompt.refinedTitle)}
                         </p>
                       ) : null}
-                      {"primaryKeyword" in log.requested_prompt && log.requested_prompt.primaryKeyword ? (
+                      {"primaryKeyword" in log.requested_prompt &&
+                      log.requested_prompt.primaryKeyword ? (
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Keyword: {String(log.requested_prompt.primaryKeyword)} / Intent:{" "}
+                          Keyword: {String(log.requested_prompt.primaryKeyword)}{" "}
+                          / Intent:{" "}
                           {String(log.requested_prompt.searchIntent || "auto")}
                         </p>
                       ) : null}
-                      {"sourceUrls" in log.requested_prompt && Array.isArray(log.requested_prompt.sourceUrls) ? (
+                      {"sourceUrls" in log.requested_prompt &&
+                      Array.isArray(log.requested_prompt.sourceUrls) ? (
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Sources: {log.requested_prompt.sourceUrls.length} / Internal links:{" "}
-                          {Array.isArray(log.requested_prompt.internalLinks) ? log.requested_prompt.internalLinks.length : 0}
+                          Sources: {log.requested_prompt.sourceUrls.length} /
+                          Internal links:{" "}
+                          {Array.isArray(log.requested_prompt.internalLinks)
+                            ? log.requested_prompt.internalLinks.length
+                            : 0}
                         </p>
                       ) : null}
                       {"qualityGate" in log.requested_prompt &&
@@ -941,14 +1180,30 @@ const Admin = () => {
                         <p className="mt-1 text-xs text-muted-foreground">
                           Quality gate:{" "}
                           {String(
-                            (log.requested_prompt.qualityGate as QualityGateSnapshot).passed ? "passed" : "needs review",
+                            (
+                              log.requested_prompt
+                                .qualityGate as QualityGateSnapshot
+                            ).passed
+                              ? "passed"
+                              : "needs review",
                           )}{" "}
-                          ({String((log.requested_prompt.qualityGate as QualityGateSnapshot).score ?? "n/a")})
+                          (
+                          {String(
+                            (
+                              log.requested_prompt
+                                .qualityGate as QualityGateSnapshot
+                            ).score ?? "n/a",
+                          )}
+                          )
                         </p>
                       ) : null}
                     </>
                   ) : null}
-                  {log.error_message ? <p className="mt-1 text-xs text-destructive">{log.error_message}</p> : null}
+                  {log.error_message ? (
+                    <p className="mt-1 text-xs text-destructive">
+                      {log.error_message}
+                    </p>
+                  ) : null}
                 </div>
               ))
             )}
@@ -959,7 +1214,9 @@ const Admin = () => {
       <Dialog open={showEditor} onOpenChange={setShowEditor}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingPost ? "Edit content" : "Create content"}</DialogTitle>
+            <DialogTitle>
+              {editingPost ? "Edit content" : "Create content"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
@@ -974,7 +1231,10 @@ const Admin = () => {
                 />
               </Field>
               <Field label="Slug">
-                <Input value={form.slug} onChange={(event) => updateForm("slug", event.target.value)} />
+                <Input
+                  value={form.slug}
+                  onChange={(event) => updateForm("slug", event.target.value)}
+                />
               </Field>
             </div>
 
@@ -1015,7 +1275,12 @@ const Admin = () => {
                 <select
                   className="h-10 rounded-md border bg-background px-3 text-sm"
                   value={form.workflowStatus}
-                  onChange={(event) => updateForm("workflowStatus", event.target.value as WorkflowStatus)}
+                  onChange={(event) =>
+                    updateForm(
+                      "workflowStatus",
+                      event.target.value as WorkflowStatus,
+                    )
+                  }
                 >
                   <option value="idea">Idea</option>
                   <option value="reviewing">Reviewing</option>
@@ -1029,7 +1294,9 @@ const Admin = () => {
                   <Input
                     type="datetime-local"
                     value={form.scheduledAt}
-                    onChange={(event) => updateForm("scheduledAt", event.target.value)}
+                    onChange={(event) =>
+                      updateForm("scheduledAt", event.target.value)
+                    }
                   />
                   <p className="text-xs text-muted-foreground">
                     Scheduled posts must stay approved to be auto-published.
@@ -1038,7 +1305,11 @@ const Admin = () => {
               </Field>
             ) : null}
             <Field label="Excerpt">
-              <Textarea value={form.excerpt} onChange={(event) => updateForm("excerpt", event.target.value)} rows={3} />
+              <Textarea
+                value={form.excerpt}
+                onChange={(event) => updateForm("excerpt", event.target.value)}
+                rows={3}
+              />
             </Field>
 
             <Field label="Content blocks (`---` separator)">
@@ -1052,19 +1323,40 @@ const Admin = () => {
 
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Tags">
-                <Input value={form.tags} onChange={(event) => updateForm("tags", event.target.value)} placeholder="keyword1, keyword2" />
+                <Input
+                  value={form.tags}
+                  onChange={(event) => updateForm("tags", event.target.value)}
+                  placeholder="keyword1, keyword2"
+                />
               </Field>
               <Field label="Read time">
-                <Input value={form.readTime} onChange={(event) => updateForm("readTime", event.target.value)} placeholder="8분" />
+                <Input
+                  value={form.readTime}
+                  onChange={(event) =>
+                    updateForm("readTime", event.target.value)
+                  }
+                  placeholder="8분"
+                />
               </Field>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Hero image">
-                <Input value={form.heroImage} onChange={(event) => updateForm("heroImage", event.target.value)} />
+                <Input
+                  value={form.heroImage}
+                  onChange={(event) =>
+                    updateForm("heroImage", event.target.value)
+                  }
+                />
               </Field>
               <Field label="Related slugs">
-                <Input value={form.relatedSlugs} onChange={(event) => updateForm("relatedSlugs", event.target.value)} placeholder="slug-1, slug-2" />
+                <Input
+                  value={form.relatedSlugs}
+                  onChange={(event) =>
+                    updateForm("relatedSlugs", event.target.value)
+                  }
+                  placeholder="slug-1, slug-2"
+                />
               </Field>
             </div>
 
@@ -1074,40 +1366,58 @@ const Admin = () => {
                 onChange={(event) => updateForm("faq", event.target.value)}
                 rows={6}
                 className="font-mono text-xs"
-                placeholder={"Q: Question\nA: Answer\n\nQ: Another question\nA: Another answer"}
+                placeholder={
+                  "Q: Question\nA: Answer\n\nQ: Another question\nA: Another answer"
+                }
               />
             </Field>
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">AI generation settings</CardTitle>
+                <CardTitle className="text-base">
+                  AI generation settings
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="Template">
                     <Input
                       value={form.generationMeta.template}
-                      onChange={(event) => updateGenerationMeta("template", event.target.value)}
+                      onChange={(event) =>
+                        updateGenerationMeta("template", event.target.value)
+                      }
                       placeholder="guide, comparison, faq, best-of"
                     />
                   </Field>
                   <Field label="Target audience">
                     <Input
                       value={form.generationMeta.targetAudience}
-                      onChange={(event) => updateGenerationMeta("targetAudience", event.target.value)}
+                      onChange={(event) =>
+                        updateGenerationMeta(
+                          "targetAudience",
+                          event.target.value,
+                        )
+                      }
                       placeholder="beginner runners, wide-foot runners"
                     />
                   </Field>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <Field label="Tone">
-                    <Input value={form.generationMeta.tone} onChange={(event) => updateGenerationMeta("tone", event.target.value)} />
+                    <Input
+                      value={form.generationMeta.tone}
+                      onChange={(event) =>
+                        updateGenerationMeta("tone", event.target.value)
+                      }
+                    />
                   </Field>
                   <Field label="Length">
                     <select
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                       value={form.generationMeta.length}
-                      onChange={(event) => updateGenerationMeta("length", event.target.value)}
+                      onChange={(event) =>
+                        updateGenerationMeta("length", event.target.value)
+                      }
                     >
                       <option value="short">Short</option>
                       <option value="medium">Medium</option>
@@ -1115,12 +1425,22 @@ const Admin = () => {
                     </select>
                   </Field>
                   <Field label="CTA">
-                    <Input value={form.generationMeta.cta} onChange={(event) => updateGenerationMeta("cta", event.target.value)} />
+                    <Input
+                      value={form.generationMeta.cta}
+                      onChange={(event) =>
+                        updateGenerationMeta("cta", event.target.value)
+                      }
+                    />
                   </Field>
                   <Field label="Primary keyword">
                     <Input
                       value={form.generationMeta.primaryKeyword}
-                      onChange={(event) => updateGenerationMeta("primaryKeyword", event.target.value)}
+                      onChange={(event) =>
+                        updateGenerationMeta(
+                          "primaryKeyword",
+                          event.target.value,
+                        )
+                      }
                       placeholder="러닝화 추천"
                     />
                   </Field>
@@ -1130,19 +1450,31 @@ const Admin = () => {
                     <select
                       className="h-10 rounded-md border bg-background px-3 text-sm"
                       value={form.generationMeta.searchIntent}
-                      onChange={(event) => updateGenerationMeta("searchIntent", event.target.value as SearchIntent)}
+                      onChange={(event) =>
+                        updateGenerationMeta(
+                          "searchIntent",
+                          event.target.value as SearchIntent,
+                        )
+                      }
                     >
-                      {Object.entries(searchIntentLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
+                      {Object.entries(searchIntentLabels).map(
+                        ([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </Field>
                   <Field label="SEO keywords">
                     <Input
                       value={form.generationMeta.seoKeywords.join(", ")}
-                      onChange={(event) => updateGenerationMeta("seoKeywords", splitCsv(event.target.value))}
+                      onChange={(event) =>
+                        updateGenerationMeta(
+                          "seoKeywords",
+                          splitCsv(event.target.value),
+                        )
+                      }
                       placeholder="러닝화 추천, 발볼 넓은 러닝화"
                     />
                   </Field>
@@ -1150,7 +1482,12 @@ const Admin = () => {
                 <Field label="Must-cover sections">
                   <Textarea
                     value={joinLines(form.generationMeta.mustIncludeSections)}
-                    onChange={(event) => updateGenerationMeta("mustIncludeSections", splitListText(event.target.value))}
+                    onChange={(event) =>
+                      updateGenerationMeta(
+                        "mustIncludeSections",
+                        splitListText(event.target.value),
+                      )
+                    }
                     rows={4}
                     placeholder={"핵심 요약\n선택 기준\n실수하기 쉬운 부분"}
                   />
@@ -1159,78 +1496,123 @@ const Admin = () => {
                   <Field label="Competitor URLs">
                     <Textarea
                       value={joinLines(form.generationMeta.competitorUrls)}
-                      onChange={(event) => updateGenerationMeta("competitorUrls", splitListText(event.target.value))}
+                      onChange={(event) =>
+                        updateGenerationMeta(
+                          "competitorUrls",
+                          splitListText(event.target.value),
+                        )
+                      }
                       rows={4}
-                      placeholder={"https://example.com/article-1\nhttps://example.com/article-2"}
+                      placeholder={
+                        "https://example.com/article-1\nhttps://example.com/article-2"
+                      }
                     />
                   </Field>
                   <Field label="Reference URLs">
                     <Textarea
                       value={joinLines(form.generationMeta.referenceUrls)}
-                      onChange={(event) => updateGenerationMeta("referenceUrls", splitListText(event.target.value))}
+                      onChange={(event) =>
+                        updateGenerationMeta(
+                          "referenceUrls",
+                          splitListText(event.target.value),
+                        )
+                      }
                       rows={4}
-                      placeholder={"https://trusted-source.com/report\nhttps://trusted-source.com/guide"}
+                      placeholder={
+                        "https://trusted-source.com/report\nhttps://trusted-source.com/guide"
+                      }
                     />
                   </Field>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  The generator will refine the input title, infer search intent when needed, analyze the live SERP,
-                  generate meta/schema outputs, and run a quality gate before bulk auto-approval.
+                  The generator will refine the input title, infer search intent
+                  when needed, analyze the live SERP, generate meta/schema
+                  outputs, and run a quality gate before bulk auto-approval.
                 </p>
                 {hasSeoSnapshot(form.generationMeta) ? (
                   <div className="rounded-xl border p-4 text-sm">
                     <p className="font-medium">SEO automation snapshot</p>
                     {form.generationMeta.refinedTitle ? (
                       <p className="mt-2 text-muted-foreground">
-                        Refined title: <span className="text-foreground">{form.generationMeta.refinedTitle}</span>
+                        Refined title:{" "}
+                        <span className="text-foreground">
+                          {form.generationMeta.refinedTitle}
+                        </span>
                       </p>
                     ) : null}
                     {form.generationMeta.metaTitle ? (
                       <p className="mt-1 text-muted-foreground">
-                        Meta title: <span className="text-foreground">{form.generationMeta.metaTitle}</span>
+                        Meta title:{" "}
+                        <span className="text-foreground">
+                          {form.generationMeta.metaTitle}
+                        </span>
                       </p>
                     ) : null}
                     {form.generationMeta.metaDescription ? (
                       <p className="mt-1 text-muted-foreground">
-                        Meta description: <span className="text-foreground">{form.generationMeta.metaDescription}</span>
+                        Meta description:{" "}
+                        <span className="text-foreground">
+                          {form.generationMeta.metaDescription}
+                        </span>
                       </p>
                     ) : null}
                     {form.generationMeta.sourceUrls?.length ? (
                       <p className="mt-1 text-muted-foreground">
-                        Sources: <span className="text-foreground">{form.generationMeta.sourceUrls.length}</span>
+                        Sources:{" "}
+                        <span className="text-foreground">
+                          {form.generationMeta.sourceUrls.length}
+                        </span>
                       </p>
                     ) : null}
                     {form.generationMeta.internalLinks?.length ? (
                       <p className="mt-1 text-muted-foreground">
-                        Internal links: <span className="text-foreground">{form.generationMeta.internalLinks.length}</span>
+                        Internal links:{" "}
+                        <span className="text-foreground">
+                          {form.generationMeta.internalLinks.length}
+                        </span>
                       </p>
                     ) : null}
                     {form.generationMeta.qualityGate ? (
                       <>
                         <p className="mt-1 text-muted-foreground">
                           Quality gate:{" "}
-                          <span className={form.generationMeta.qualityGate.passed ? "text-foreground" : "text-destructive"}>
-                            {form.generationMeta.qualityGate.passed ? "Passed" : "Needs review"} ({form.generationMeta.qualityGate.score})
+                          <span
+                            className={
+                              form.generationMeta.qualityGate.passed
+                                ? "text-foreground"
+                                : "text-destructive"
+                            }
+                          >
+                            {form.generationMeta.qualityGate.passed
+                              ? "Passed"
+                              : "Needs review"}{" "}
+                            ({form.generationMeta.qualityGate.score})
                           </span>
                         </p>
                         {form.generationMeta.qualityGate.blockers.length ? (
                           <div className="mt-2 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive">
                             <p className="font-medium">Blockers</p>
-                            {form.generationMeta.qualityGate.blockers.map((item) => (
-                              <p key={item} className="mt-1">
-                                {item}
-                              </p>
-                            ))}
+                            {form.generationMeta.qualityGate.blockers.map(
+                              (item) => (
+                                <p key={item} className="mt-1">
+                                  {item}
+                                </p>
+                              ),
+                            )}
                           </div>
                         ) : null}
                         {form.generationMeta.qualityGate.warnings.length ? (
                           <div className="mt-2 rounded-lg border p-3 text-xs text-muted-foreground">
-                            <p className="font-medium text-foreground">Warnings</p>
-                            {form.generationMeta.qualityGate.warnings.map((item) => (
-                              <p key={item} className="mt-1">
-                                {item}
-                              </p>
-                            ))}
+                            <p className="font-medium text-foreground">
+                              Warnings
+                            </p>
+                            {form.generationMeta.qualityGate.warnings.map(
+                              (item) => (
+                                <p key={item} className="mt-1">
+                                  {item}
+                                </p>
+                              ),
+                            )}
                           </div>
                         ) : null}
                       </>
@@ -1244,7 +1626,10 @@ const Admin = () => {
               <Button variant="outline" onClick={() => setShowEditor(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={loading || !form.title.trim()}>
+              <Button
+                onClick={handleSave}
+                disabled={loading || !form.title.trim()}
+              >
                 Save
               </Button>
             </div>
@@ -1277,7 +1662,9 @@ const Admin = () => {
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div>
                   <p className="text-sm font-medium">Generate immediately</p>
-                  <p className="text-xs text-muted-foreground">Create the draft and run AI writing right away.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Create the draft and run AI writing right away.
+                  </p>
                 </div>
                 <Switch
                   checked={bulkAutoGenerate}
@@ -1290,7 +1677,9 @@ const Admin = () => {
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div>
                   <p className="text-sm font-medium">Auto-schedule publish</p>
-                  <p className="text-xs text-muted-foreground">Approve and schedule each generated article automatically.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Approve and schedule each generated article automatically.
+                  </p>
                 </div>
                 <Switch
                   checked={bulkAutoSchedule}
@@ -1305,21 +1694,33 @@ const Admin = () => {
             {bulkAutoGenerate ? (
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">AI quality settings</CardTitle>
+                  <CardTitle className="text-base">
+                    AI quality settings
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <Field label="Template">
                       <Input
                         value={bulkGenerationMeta.template}
-                        onChange={(event) => updateBulkGenerationMeta("template", event.target.value)}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta(
+                            "template",
+                            event.target.value,
+                          )
+                        }
                         placeholder="guide, comparison, faq, authority"
                       />
                     </Field>
                     <Field label="Target audience">
                       <Input
                         value={bulkGenerationMeta.targetAudience}
-                        onChange={(event) => updateBulkGenerationMeta("targetAudience", event.target.value)}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta(
+                            "targetAudience",
+                            event.target.value,
+                          )
+                        }
                         placeholder="beginner runners, marathon trainees"
                       />
                     </Field>
@@ -1328,14 +1729,18 @@ const Admin = () => {
                     <Field label="Tone">
                       <Input
                         value={bulkGenerationMeta.tone}
-                        onChange={(event) => updateBulkGenerationMeta("tone", event.target.value)}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta("tone", event.target.value)
+                        }
                       />
                     </Field>
                     <Field label="Length">
                       <select
                         className="h-10 rounded-md border bg-background px-3 text-sm"
                         value={bulkGenerationMeta.length}
-                        onChange={(event) => updateBulkGenerationMeta("length", event.target.value)}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta("length", event.target.value)
+                        }
                       >
                         <option value="short">Short</option>
                         <option value="medium">Medium</option>
@@ -1345,14 +1750,21 @@ const Admin = () => {
                     <Field label="CTA">
                       <Input
                         value={bulkGenerationMeta.cta}
-                        onChange={(event) => updateBulkGenerationMeta("cta", event.target.value)}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta("cta", event.target.value)
+                        }
                         placeholder="book a fitting, compare models"
                       />
                     </Field>
                     <Field label="Primary keyword">
                       <Input
                         value={bulkGenerationMeta.primaryKeyword}
-                        onChange={(event) => updateBulkGenerationMeta("primaryKeyword", event.target.value)}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta(
+                            "primaryKeyword",
+                            event.target.value,
+                          )
+                        }
                         placeholder="러닝화 추천"
                       />
                     </Field>
@@ -1362,19 +1774,31 @@ const Admin = () => {
                       <select
                         className="h-10 rounded-md border bg-background px-3 text-sm"
                         value={bulkGenerationMeta.searchIntent}
-                        onChange={(event) => updateBulkGenerationMeta("searchIntent", event.target.value as SearchIntent)}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta(
+                            "searchIntent",
+                            event.target.value as SearchIntent,
+                          )
+                        }
                       >
-                        {Object.entries(searchIntentLabels).map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
+                        {Object.entries(searchIntentLabels).map(
+                          ([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ),
+                        )}
                       </select>
                     </Field>
                     <Field label="SEO keywords">
                       <Input
                         value={bulkGenerationMeta.seoKeywords.join(", ")}
-                        onChange={(event) => updateBulkGenerationMeta("seoKeywords", splitCsv(event.target.value))}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta(
+                            "seoKeywords",
+                            splitCsv(event.target.value),
+                          )
+                        }
                         placeholder="러닝화 추천, 발볼 넓은 러닝화, 입문 러닝화"
                       />
                     </Field>
@@ -1382,7 +1806,12 @@ const Admin = () => {
                   <Field label="Must-cover sections">
                     <Textarea
                       value={joinLines(bulkGenerationMeta.mustIncludeSections)}
-                      onChange={(event) => updateBulkGenerationMeta("mustIncludeSections", splitListText(event.target.value))}
+                      onChange={(event) =>
+                        updateBulkGenerationMeta(
+                          "mustIncludeSections",
+                          splitListText(event.target.value),
+                        )
+                      }
                       rows={4}
                       placeholder={"핵심 요약\n선택 기준\n실수하기 쉬운 부분"}
                     />
@@ -1391,17 +1820,31 @@ const Admin = () => {
                     <Field label="Competitor URLs">
                       <Textarea
                         value={joinLines(bulkGenerationMeta.competitorUrls)}
-                        onChange={(event) => updateBulkGenerationMeta("competitorUrls", splitListText(event.target.value))}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta(
+                            "competitorUrls",
+                            splitListText(event.target.value),
+                          )
+                        }
                         rows={4}
-                        placeholder={"https://example.com/article-1\nhttps://example.com/article-2"}
+                        placeholder={
+                          "https://example.com/article-1\nhttps://example.com/article-2"
+                        }
                       />
                     </Field>
                     <Field label="Reference URLs">
                       <Textarea
                         value={joinLines(bulkGenerationMeta.referenceUrls)}
-                        onChange={(event) => updateBulkGenerationMeta("referenceUrls", splitListText(event.target.value))}
+                        onChange={(event) =>
+                          updateBulkGenerationMeta(
+                            "referenceUrls",
+                            splitListText(event.target.value),
+                          )
+                        }
                         rows={4}
-                        placeholder={"https://trusted-source.com/report\nhttps://trusted-source.com/guide"}
+                        placeholder={
+                          "https://trusted-source.com/report\nhttps://trusted-source.com/guide"
+                        }
                       />
                     </Field>
                   </div>
@@ -1414,7 +1857,9 @@ const Admin = () => {
                   <Input
                     type="datetime-local"
                     value={bulkScheduleStartAt}
-                    onChange={(event) => setBulkScheduleStartAt(event.target.value)}
+                    onChange={(event) =>
+                      setBulkScheduleStartAt(event.target.value)
+                    }
                   />
                 </Field>
                 <Field label="Interval hours">
@@ -1422,7 +1867,11 @@ const Admin = () => {
                     type="number"
                     min={1}
                     value={bulkScheduleIntervalHours}
-                    onChange={(event) => setBulkScheduleIntervalHours(Number.parseInt(event.target.value, 10) || 1)}
+                    onChange={(event) =>
+                      setBulkScheduleIntervalHours(
+                        Number.parseInt(event.target.value, 10) || 1,
+                      )
+                    }
                   />
                 </Field>
               </div>
@@ -1432,21 +1881,31 @@ const Admin = () => {
                 value={bulkTitles}
                 onChange={(event) => setBulkTitles(event.target.value)}
                 rows={10}
-                placeholder={"Best daily running shoes for beginners\nNike Pegasus review\nKR to US shoe size converter guide"}
+                placeholder={
+                  "Best daily running shoes for beginners\nNike Pegasus review\nKR to US shoe size converter guide"
+                }
               />
             </Field>
             {bulkAutoGenerate && bulkAutoSchedule ? (
               <p className="text-xs text-muted-foreground">
-                Each title will be drafted immediately, auto-approved, and scheduled in sequence like a WordPress reserved post queue.
+                Each title will be drafted immediately, auto-approved, and
+                scheduled in sequence like a WordPress reserved post queue.
               </p>
             ) : null}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowBulk(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleBulkCreate} disabled={loading || !bulkTitles.trim()}>
+              <Button
+                onClick={handleBulkCreate}
+                disabled={loading || !bulkTitles.trim()}
+              >
                 <Send className="mr-1 h-4 w-4" />
-                {bulkAutoGenerate ? (bulkAutoSchedule ? "Generate and schedule" : "Generate now") : "Create drafts"}
+                {bulkAutoGenerate
+                  ? bulkAutoSchedule
+                    ? "Generate and schedule"
+                    : "Generate now"
+                  : "Create drafts"}
               </Button>
             </div>
           </div>
@@ -1462,11 +1921,18 @@ const Admin = () => {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium">Auto publish</p>
-                <p className="text-sm text-muted-foreground">Allow scheduled posts to publish automatically.</p>
+                <p className="text-sm text-muted-foreground">
+                  Allow scheduled posts to publish automatically.
+                </p>
               </div>
               <Switch
                 checked={settings.auto_publish_enabled}
-                onCheckedChange={(value) => setSettings((current) => ({ ...current, auto_publish_enabled: value }))}
+                onCheckedChange={(value) =>
+                  setSettings((current) => ({
+                    ...current,
+                    auto_publish_enabled: value,
+                  }))
+                }
               />
             </div>
             <Field label="Publish interval (hours)">
@@ -1476,7 +1942,8 @@ const Admin = () => {
                 onChange={(event) =>
                   setSettings((current) => ({
                     ...current,
-                    publish_interval_hours: Number.parseInt(event.target.value, 10) || 24,
+                    publish_interval_hours:
+                      Number.parseInt(event.target.value, 10) || 24,
                   }))
                 }
               />
@@ -1516,7 +1983,13 @@ function StatsCard({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -1546,11 +2019,11 @@ function joinLines(values: string[] | undefined) {
 function hasSeoSnapshot(meta: GenerationMeta) {
   return Boolean(
     meta.refinedTitle ||
-      meta.metaTitle ||
-      meta.metaDescription ||
-      meta.sourceUrls?.length ||
-      meta.internalLinks?.length ||
-      meta.qualityGate,
+    meta.metaTitle ||
+    meta.metaDescription ||
+    meta.sourceUrls?.length ||
+    meta.internalLinks?.length ||
+    meta.qualityGate,
   );
 }
 
@@ -1581,22 +2054,31 @@ function getSearchIntent(post: BlogPost) {
 function getQualityGate(post: BlogPost) {
   const gate = post.generation_meta?.qualityGate;
   if (!gate || typeof gate !== "object") return null;
-  if (typeof gate.passed !== "boolean" || typeof gate.score !== "number") return null;
+  if (typeof gate.passed !== "boolean" || typeof gate.score !== "number")
+    return null;
 
   return {
     passed: gate.passed,
     score: gate.score,
-    blockers: Array.isArray(gate.blockers) ? gate.blockers.map((item) => String(item)) : [],
-    warnings: Array.isArray(gate.warnings) ? gate.warnings.map((item) => String(item)) : [],
+    blockers: Array.isArray(gate.blockers)
+      ? gate.blockers.map((item) => String(item))
+      : [],
+    warnings: Array.isArray(gate.warnings)
+      ? gate.warnings.map((item) => String(item))
+      : [],
   } satisfies QualityGateSnapshot;
 }
 
 function getSourceCount(post: BlogPost) {
-  return Array.isArray(post.generation_meta?.sourceUrls) ? post.generation_meta.sourceUrls.length : 0;
+  return Array.isArray(post.generation_meta?.sourceUrls)
+    ? post.generation_meta.sourceUrls.length
+    : 0;
 }
 
 function getInternalLinkCount(post: BlogPost) {
-  return Array.isArray(post.generation_meta?.internalLinks) ? post.generation_meta.internalLinks.length : 0;
+  return Array.isArray(post.generation_meta?.internalLinks)
+    ? post.generation_meta.internalLinks.length
+    : 0;
 }
 
 function parseFaq(value: string) {
@@ -1606,8 +2088,12 @@ function parseFaq(value: string) {
     .split("\n\n")
     .map((block) => {
       const lines = block.split("\n");
-      const question = (lines.find((line) => line.startsWith("Q:")) || "").replace("Q:", "").trim();
-      const answer = (lines.find((line) => line.startsWith("A:")) || "").replace("A:", "").trim();
+      const question = (lines.find((line) => line.startsWith("Q:")) || "")
+        .replace("Q:", "")
+        .trim();
+      const answer = (lines.find((line) => line.startsWith("A:")) || "")
+        .replace("A:", "")
+        .trim();
       return { question, answer };
     })
     .filter((item) => item.question && item.answer);
