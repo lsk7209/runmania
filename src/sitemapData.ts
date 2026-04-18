@@ -19,4 +19,9 @@ export const staticPages: SitemapEntry[] = [
   { path: "/tools", changefreq: "monthly", priority: 0.6 },
   { path: "/tools/pace-calculator", changefreq: "monthly", priority: 0.5 },
   { path: "/tools/size-converter", changefreq: "monthly", priority: 0.5 },
+  { path: "/tools/calorie-calculator", changefreq: "monthly", priority: 0.6 },
+  { path: "/tools/heart-rate-zones", changefreq: "monthly", priority: 0.6 },
+  { path: "/tools/race-predictor", changefreq: "monthly", priority: 0.6 },
+  { path: "/tools/training-paces", changefreq: "monthly", priority: 0.6 },
+  { path: "/tools/weight-loss", changefreq: "monthly", priority: 0.6 },
 ];
