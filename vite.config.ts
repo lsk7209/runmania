@@ -17,11 +17,21 @@ function sitemapPlugin(): Plugin {
         // Parse static pages from sitemapData.ts
         const sitemapDataPath = path.resolve(__dirname, "src/sitemapData.ts");
         const sitemapSrc = fs.readFileSync(sitemapDataPath, "utf-8");
-        const staticEntries: { path: string; changefreq: string; priority: number; lastmod?: string }[] = [];
-        const pageRe = /\{\s*path:\s*"([^"]+)",\s*changefreq:\s*"([^"]+)",\s*priority:\s*([\d.]+)/g;
+        const staticEntries: {
+          path: string;
+          changefreq: string;
+          priority: number;
+          lastmod?: string;
+        }[] = [];
+        const pageRe =
+          /\{\s*path:\s*"([^"]+)",\s*changefreq:\s*"([^"]+)",\s*priority:\s*([\d.]+)/g;
         let m: RegExpExecArray | null;
         while ((m = pageRe.exec(sitemapSrc)) !== null) {
-          staticEntries.push({ path: m[1], changefreq: m[2], priority: parseFloat(m[3]) });
+          staticEntries.push({
+            path: m[1],
+            changefreq: m[2],
+            priority: parseFloat(m[3]),
+          });
         }
 
         // Parse blog posts from Blog.tsx
@@ -68,7 +78,8 @@ function sitemapPlugin(): Plugin {
 
 /* ── IndexNow auto-ping plugin ── */
 function indexNowPlugin(): Plugin {
-  const INDEXNOW_KEY = "b1c3e5a7d9f2e4b6a8c0d2e4f6a8b0c1";
+  const INDEXNOW_KEY =
+    process.env.INDEXNOW_KEY ?? "b1c3e5a7d9f2e4b6a8c0d2e4f6a8b0c1";
   const BASE_URL = "https://runmania.kr";
 
   return {
@@ -109,7 +120,9 @@ function indexNowPlugin(): Plugin {
           body: JSON.stringify(indexNowBody),
         });
 
-        console.log(`✅ IndexNow ping sent: ${indexNowRes.status} (${urlList.length} URLs → Bing/Naver/Yandex)`);
+        console.log(
+          `✅ IndexNow ping sent: ${indexNowRes.status} (${urlList.length} URLs → Bing/Naver/Yandex)`,
+        );
 
         // 2. Google sitemap ping
         const googlePingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(`${BASE_URL}/sitemap.xml`)}`;
@@ -150,7 +163,9 @@ function rssPlugin(): Plugin {
 
         const items = slugs
           .map((slug, i) => {
-            const pubDate = dates[i] ? new Date(dates[i]).toUTCString() : new Date().toUTCString();
+            const pubDate = dates[i]
+              ? new Date(dates[i]).toUTCString()
+              : new Date().toUTCString();
             return `    <item>
       <title><![CDATA[${titles[i] || slug}]]></title>
       <link>${BASE_URL}/blog/${slug}</link>
@@ -236,7 +251,10 @@ function devApiPlugin(): Plugin {
             res.setHeader("Content-Type", "application/json; charset=utf-8");
             res.end(
               JSON.stringify({
-                error: error instanceof Error ? error.message : "Internal Server Error",
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : "Internal Server Error",
               }),
             );
           }
@@ -267,7 +285,11 @@ function createVercelLikeResponse(res: ServerResponse) {
   };
 
   adaptedRes.send = (payload: unknown) => {
-    if (typeof payload === "object" && payload !== null && !Buffer.isBuffer(payload)) {
+    if (
+      typeof payload === "object" &&
+      payload !== null &&
+      !Buffer.isBuffer(payload)
+    ) {
       return adaptedRes.json(payload);
     }
     adaptedRes.end(payload as string | Buffer | Uint8Array);
