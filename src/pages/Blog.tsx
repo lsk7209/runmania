@@ -532,7 +532,23 @@ const SocialShare = ({ title, slug }: { title: string; slug: string }) => {
 /* ─── Content Renderers ─── */
 
 const parseMarkdownTable = (raw: string) => {
-  const lines = raw.split("\n").filter(Boolean);
+  // 개행 없는 한 줄 형식: "| |" → "|\n|" 로 정규화
+  const normalized = raw.includes("\n") ? raw : raw.replace(/\| \|/g, "|\n|");
+  const rawLines = normalized.split("\n").filter(Boolean);
+  // 제목과 첫 행이 같은 줄에 있으면 분리 ("제목 | col1 |" → ["제목", "| col1 |"])
+  const lines: string[] = [];
+  for (const line of rawLines) {
+    const t = line.trim();
+    if (!t.startsWith("|") && t.includes("|")) {
+      const idx = t.indexOf("|");
+      const title = t.slice(0, idx).trim();
+      const row = t.slice(idx).trim();
+      if (title) lines.push(title);
+      if (row) lines.push(row);
+    } else {
+      lines.push(line);
+    }
+  }
   const titleLines = lines.filter((l) => !l.trim().startsWith("|"));
   const tableLines = lines.filter(
     (l) => l.trim().startsWith("|") && !l.includes("---"),
