@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#10b981"/>
+  <!-- Shoe body -->
+  <path d="M10 40 Q14 28 28 30 L42 30 Q50 30 54 36 L54 42 Q54 45 50 45 L12 45 Q8 45 8 42 Z" fill="white" opacity="0.95"/>
+  <!-- Shoe upper/toe box -->
+  <path d="M28 30 Q22 22 18 24 Q12 26 10 30 Z" fill="white" opacity="0.9"/>
+  <!-- Sole -->
+  <rect x="9" y="43" width="46" height="5" rx="2.5" fill="#065f46"/>
+  <!-- Laces -->
+  <line x1="30" y1="30" x2="30" y2="43" stroke="#10b981" stroke-width="1.5" opacity="0.6"/>
+  <line x1="35" y1="30" x2="35" y2="43" stroke="#10b981" stroke-width="1.5" opacity="0.6"/>
+  <line x1="40" y1="30" x2="40" y2="43" stroke="#10b981" stroke-width="1.5" opacity="0.6"/>
+  <!-- Horizontal lace ties -->
+  <line x1="30" y1="33" x2="40" y2="33" stroke="#10b981" stroke-width="1.2" opacity="0.5"/>
+  <line x1="30" y1="37" x2="40" y2="37" stroke="#10b981" stroke-width="1.2" opacity="0.5"/>
+</svg>
