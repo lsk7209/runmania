@@ -831,6 +831,19 @@ const renderContent = (paragraph: string, i: number) => {
         {paragraph.replace("## ", "")}
       </h2>
     );
+  if (!paragraph.startsWith("[") && paragraph.includes(" | "))
+    return (
+      <div key={i} className="my-2 flex flex-wrap gap-2">
+        {paragraph.split(" | ").map((seg, j) => (
+          <span
+            key={j}
+            className="rounded-lg border border-border bg-secondary/40 px-3 py-1.5 text-xs text-secondary-foreground"
+          >
+            {renderTextWithLinks(seg.trim())}
+          </span>
+        ))}
+      </div>
+    );
   if (paragraph.startsWith("**") || paragraph.startsWith("- "))
     return (
       <div
