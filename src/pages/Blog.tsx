@@ -831,6 +831,57 @@ const renderContent = (paragraph: string, i: number) => {
   );
 };
 
+const RelatedPosts = ({
+  currentSlug,
+  posts,
+}: {
+  currentSlug: string;
+  posts: BlogPost[];
+}) => {
+  const current = posts.find((p) => p.slug === currentSlug);
+  if (!current?.relatedSlugs?.length) return null;
+
+  const related = current.relatedSlugs
+    .map((slug) => posts.find((p) => p.slug === slug))
+    .filter(Boolean) as BlogPost[];
+
+  if (related.length === 0) return null;
+
+  return (
+    <div className="mt-12">
+      <h3 className="mb-4 text-lg font-bold">관련 글 추천</h3>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {related.map((post) => (
+          <Link key={post.slug} to={`/blog/${post.slug}`}>
+            <div className="group rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30 hover:card-glow">
+              <img
+                src={post.heroImage}
+                alt={post.title}
+                className="mb-3 h-20 w-full rounded-lg object-contain bg-secondary/30"
+                loading="lazy"
+              />
+              <p className="text-xs text-muted-foreground mb-1">{post.date}</p>
+              <h4 className="text-sm font-semibold group-hover:text-primary transition-colors line-clamp-2">
+                {post.title}
+              </h4>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {post.tags.slice(0, 2).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-muted-foreground"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 /* ─── Blog Detail ─── */
 
 const BlogDetail = ({ slug }: { slug: string }) => {
