@@ -872,6 +872,102 @@ const renderTextWithLinks = (text: string): React.ReactNode => {
   return <>{nodes}</>;
 };
 
+const renderBodyLines = (
+  lines: string[],
+  keyPrefix: string,
+): React.ReactNode => {
+  const result: React.ReactNode[] = [];
+  let tableBuffer: string[] = [];
+
+  const flushTable = (key: string) => {
+    if (tableBuffer.length === 0) return;
+    const dataLines = tableBuffer.filter((l) => !l.includes("---"));
+    if (dataLines.length >= 2) {
+      const headers = dataLines[0]
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const rows = dataLines.slice(1).map((l) =>
+        l
+          .split("|")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      );
+      result.push(
+        <div
+          key={key}
+          className="my-6 overflow-hidden rounded-xl border border-border"
+        >
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-secondary/50">
+                {headers.map((h, i) => (
+                  <TableHead
+                    key={i}
+                    className="text-xs font-bold text-foreground"
+                  >
+                    {h}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row, i) => (
+                <TableRow key={i}>
+                  {row.map((cell, j) => (
+                    <TableCell key={j} className="text-xs">
+                      {cell}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>,
+      );
+    }
+    tableBuffer = [];
+  };
+
+  lines.forEach((line, idx) => {
+    if (line.trim().startsWith("|")) {
+      tableBuffer.push(line);
+    } else {
+      flushTable(`${keyPrefix}-t${idx}`);
+      if (line.includes("**") || line.startsWith("- ")) {
+        result.push(
+          <div
+            key={idx}
+            className="text-sm leading-relaxed text-secondary-foreground"
+          >
+            {line.split("**").map((part, j) =>
+              j % 2 === 1 ? (
+                <strong key={j} className="text-foreground">
+                  {part}
+                </strong>
+              ) : (
+                <span key={j}>{renderTextWithLinks(part)}</span>
+              ),
+            )}
+          </div>,
+        );
+      } else {
+        result.push(
+          <p
+            key={idx}
+            className="text-sm leading-relaxed text-secondary-foreground"
+          >
+            {renderTextWithLinks(line)}
+          </p>,
+        );
+      }
+    }
+  });
+  flushTable(`${keyPrefix}-tend`);
+
+  return <>{result}</>;
+};
+
 const renderContent = (paragraph: string, i: number) => {
   if (paragraph.startsWith("[TABLE]") && paragraph.endsWith("[/TABLE]"))
     return <div key={i}>{parseTable(paragraph.slice(7, -8))}</div>;
@@ -892,16 +988,22 @@ const renderContent = (paragraph: string, i: number) => {
     paragraph.endsWith("[/COMPARISON]")
   )
     return <div key={i}>{parseComparison(paragraph.slice(12, -13))}</div>;
-  if (paragraph.startsWith("## "))
+  if (paragraph.startsWith("## ")) {
+    const [headLine, ...rest] = paragraph.split("\n");
+    const headingText = headLine.slice(3);
+    const bodyLines = rest.filter((l) => l.trim());
     return (
-      <h2
-        key={i}
-        id={`section-${i}`}
-        className="mt-8 mb-3 text-xl font-bold text-foreground scroll-mt-20"
-      >
-        {paragraph.replace("## ", "")}
-      </h2>
+      <div key={i}>
+        <h2
+          id={`section-${i}`}
+          className="mt-8 mb-3 text-xl font-bold text-foreground scroll-mt-20"
+        >
+          {headingText}
+        </h2>
+        {renderBodyLines(bodyLines, String(i))}
+      </div>
     );
+  }
   if (paragraph.includes("|---"))
     return <div key={i}>{parseMarkdownTable(paragraph)}</div>;
   if (!paragraph.startsWith("[") && paragraph.includes(" | "))
