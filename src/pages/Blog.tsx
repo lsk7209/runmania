@@ -531,6 +531,61 @@ const SocialShare = ({ title, slug }: { title: string; slug: string }) => {
 
 /* ─── Content Renderers ─── */
 
+const parseMarkdownTable = (raw: string) => {
+  const lines = raw.split("\n").filter(Boolean);
+  const titleLines = lines.filter((l) => !l.trim().startsWith("|"));
+  const tableLines = lines.filter(
+    (l) => l.trim().startsWith("|") && !l.includes("---"),
+  );
+  if (tableLines.length < 2) return null;
+  const headers = tableLines[0]
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const rows = tableLines.slice(1).map((l) =>
+    l
+      .split("|")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  );
+  return (
+    <div className="my-6">
+      {titleLines.length > 0 && (
+        <p className="mb-2 text-sm font-semibold text-foreground">
+          {titleLines.join(" ")}
+        </p>
+      )}
+      <div className="overflow-hidden rounded-xl border border-border">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-secondary/50">
+              {headers.map((h, i) => (
+                <TableHead
+                  key={i}
+                  className="text-xs font-bold text-foreground"
+                >
+                  {h}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row, i) => (
+              <TableRow key={i}>
+                {row.map((cell, j) => (
+                  <TableCell key={j} className="text-xs">
+                    {cell}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
 const parseTable = (raw: string) => {
   const rows = raw.split("\n").filter(Boolean);
   if (rows.length < 2) return null;
@@ -831,6 +886,8 @@ const renderContent = (paragraph: string, i: number) => {
         {paragraph.replace("## ", "")}
       </h2>
     );
+  if (paragraph.includes("|---"))
+    return <div key={i}>{parseMarkdownTable(paragraph)}</div>;
   if (!paragraph.startsWith("[") && paragraph.includes(" | "))
     return (
       <div key={i} className="my-2 flex flex-wrap gap-2">
