@@ -740,7 +740,10 @@ const parseComparison = (raw: string) => {
   );
 };
 
-const renderTextWithLinks = (text: string): React.ReactNode => {
+const renderSegmentWithLinks = (
+  text: string,
+  keyPrefix: string,
+): React.ReactNode[] => {
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -751,7 +754,7 @@ const renderTextWithLinks = (text: string): React.ReactNode => {
     if (isExternal) {
       parts.push(
         <a
-          key={match.index}
+          key={`${keyPrefix}-${match.index}`}
           href={match[2]}
           target="_blank"
           rel="noopener noreferrer"
@@ -763,7 +766,7 @@ const renderTextWithLinks = (text: string): React.ReactNode => {
     } else {
       parts.push(
         <Link
-          key={match.index}
+          key={`${keyPrefix}-${match.index}`}
           to={match[2]}
           className="text-primary underline underline-offset-2 hover:text-primary/80"
         >
@@ -774,7 +777,28 @@ const renderTextWithLinks = (text: string): React.ReactNode => {
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) parts.push(text.slice(lastIndex));
-  return parts.length > 0 ? <>{parts}</> : text;
+  return parts;
+};
+
+const renderTextWithLinks = (text: string): React.ReactNode => {
+  const boldParts = text.split("**");
+  if (boldParts.length === 1) {
+    const segs = renderSegmentWithLinks(text, "t");
+    return segs.length > 0 ? <>{segs}</> : text;
+  }
+  const nodes: React.ReactNode[] = [];
+  boldParts.forEach((part, j) => {
+    if (j % 2 === 1) {
+      nodes.push(
+        <strong key={`b${j}`} className="text-foreground">
+          {part}
+        </strong>,
+      );
+    } else {
+      nodes.push(...renderSegmentWithLinks(part, `s${j}`));
+    }
+  });
+  return <>{nodes}</>;
 };
 
 const renderContent = (paragraph: string, i: number) => {
