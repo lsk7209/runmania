@@ -34,8 +34,8 @@ function sitemapPlugin(): Plugin {
           });
         }
 
-        // Parse blog posts from Blog.tsx
-        const blogPath = path.resolve(__dirname, "src/pages/Blog.tsx");
+        // Parse blog posts from localBlogPosts.ts (the actual content source)
+        const blogPath = path.resolve(__dirname, "src/data/localBlogPosts.ts");
         const blogSrc = fs.readFileSync(blogPath, "utf-8");
         const slugs: string[] = [];
         const dates: string[] = [];
@@ -139,7 +139,7 @@ function rssPlugin(): Plugin {
     closeBundle() {
       try {
         const BASE_URL = "https://runmania.kr";
-        const blogPath = path.resolve(__dirname, "src/pages/Blog.tsx");
+        const blogPath = path.resolve(__dirname, "src/data/localBlogPosts.ts");
         const blogSrc = fs.readFileSync(blogPath, "utf-8");
 
         const slugs: string[] = [];
