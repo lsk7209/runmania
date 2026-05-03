@@ -529,6 +529,9 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
       s.name.replace(/\s+/g, "-").replace(/[()]/g, "").toLowerCase() === slug,
   );
 
+  const review = shoe ? reviewData[shoe.name] : undefined;
+  const img = shoe ? getShoeImage(shoe.name) : undefined;
+
   usePageMeta({
     title: shoe
       ? `${shoe.name} 리뷰 | ${shoe.brand} 러닝화 상세 분석 | 런닝화매니아`
@@ -540,10 +543,11 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
     keywords: shoe
       ? `${shoe.name}, ${shoe.brand} 러닝화, 러닝화 리뷰, ${shoe.type}`
       : "러닝화 리뷰",
+    image: img,
+    imageAlt: shoe ? `${shoe.name} ${shoe.brand} 러닝화` : undefined,
+    type: "product",
+    noindex: !shoe,
   });
-
-  const review = reviewData[shoe.name];
-  const img = getShoeImage(shoe.name);
 
   // Product + Review + AggregateRating JSON-LD (리치 스니펫용)
   useEffect(() => {
@@ -551,7 +555,7 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
     const id = "review-jsonld";
     const existing = document.getElementById(id);
     if (existing) existing.remove();
-    const schema = {
+    const productLd = {
       "@context": "https://schema.org",
       "@type": "Product",
       name: shoe.name,
@@ -586,15 +590,29 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
         ],
       }),
     };
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "홈", item: "https://runmania.kr/" },
+        { "@type": "ListItem", position: 2, name: "리뷰", item: "https://runmania.kr/reviews" },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: shoe.name,
+          item: `https://runmania.kr/reviews/${slug}`,
+        },
+      ],
+    };
     const script = document.createElement("script");
     script.id = id;
     script.type = "application/ld+json";
-    script.textContent = JSON.stringify(schema);
+    script.textContent = JSON.stringify([productLd, breadcrumbLd]);
     document.head.appendChild(script);
     return () => {
       document.getElementById(id)?.remove();
     };
-  }, [shoe, review, img]);
+  }, [shoe, review, img, slug]);
 
   if (!shoe) {
     return (
@@ -624,6 +642,10 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
               src={img}
               alt={`${shoe.name} ${shoe.brand} 러닝화 상세 리뷰 사진`}
               className="w-full object-cover"
+              width={640}
+              height={512}
+              loading="eager"
+              decoding="async"
             />
           </div>
         )}

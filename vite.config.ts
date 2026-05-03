@@ -356,5 +356,40 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    build: {
+      target: "es2020",
+      cssCodeSplit: true,
+      sourcemap: false,
+      reportCompressedSize: false,
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return undefined;
+            if (id.includes("react-router")) return "router-vendor";
+            if (
+              id.includes("/react/") ||
+              id.includes("/react-dom/") ||
+              id.includes("scheduler")
+            ) {
+              return "react-vendor";
+            }
+            if (id.includes("@radix-ui")) return "radix-vendor";
+            if (id.includes("framer-motion")) return "motion-vendor";
+            if (id.includes("@tanstack/react-query")) return "query-vendor";
+            if (
+              id.includes("react-hook-form") ||
+              id.includes("@hookform") ||
+              id.includes("/zod/")
+            ) {
+              return "form-vendor";
+            }
+            if (id.includes("lucide-react")) return "icons-vendor";
+            if (id.includes("recharts") || id.includes("d3-")) return "charts-vendor";
+            return "vendor";
+          },
+        },
+      },
+    },
   };
 });

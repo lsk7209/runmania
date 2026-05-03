@@ -335,6 +335,8 @@ function buildPrompt(input: {
   const { title, slug, excerpt, contentType, generationMeta, seoBrief } = input;
   const keywordText = uniqueStrings([seoBrief.primaryKeyword, ...seoBrief.secondaryKeywords]).join(", ");
   const minimumBlocks = getMinimumBlockCount(generationMeta.length);
+  const minimumChars = getMinimumCharCount(generationMeta.length);
+  const minimumHeadings = getMinimumHeadingCount(generationMeta.length);
   const internalLinkText =
     seoBrief.internalLinks.length > 0
       ? seoBrief.internalLinks
@@ -423,23 +425,25 @@ Use exactly this schema:
 }
 
 Hard rules
-1. content length must be at least ${minimumBlocks} blocks.
-2. The article must be specific, useful, and factually cautious.
-3. Keep SEO keywords natural. Do not keyword-stuff.
-4. FAQ must contain 3 to 5 items.
-5. Choose hero_image from only these values:
+1. content array must contain at least ${minimumBlocks} blocks.
+2. Total body text must be at least ${minimumChars} Korean characters across all content blocks combined.
+3. Include at least ${minimumHeadings} "## " (H2) section headings inside the content array.
+4. The article must be specific, useful, and factually cautious.
+5. Keep SEO keywords natural. Do not keyword-stuff.
+6. FAQ must contain 3 to 5 items.
+7. Choose hero_image from only these values:
    /assets/shoes/nb-1080.png
    /assets/shoes/nb-more.png
    /assets/shoes/asics-kayano.png
    /assets/shoes/hoka-bondi.png
    /assets/shoes/nike-pegasus.png
    /assets/shoes/saucony-speed.png
-6. The output must be safe for human review before publication.
-7. Every major section should add distinct value; avoid repeating the same advice in different words.
-8. Prefer original wording and concrete decision criteria over generic motivational copy.
-9. related_slugs may only contain slugs from the allowed internal links list above.
-10. Use the refined working title unless there is a clearly better search-intent-preserving improvement.
-11. If the Required sections list is not "none", include each required section as an explicit "## " heading using the same wording or a very close phrasing.
+8. The output must be safe for human review before publication.
+9. Every major section should add distinct value; avoid repeating the same advice in different words.
+10. Prefer original wording and concrete decision criteria over generic motivational copy.
+11. related_slugs may only contain slugs from the allowed internal links list above.
+12. Use the refined working title unless there is a clearly better search-intent-preserving improvement.
+13. If the Required sections list is not "none", include each required section as an explicit "## " heading using the same wording or a very close phrasing.
 `;
 }
 
@@ -482,6 +486,16 @@ export function getMinimumBlockCount(length: NormalizedGenerationMeta["length"])
   return length === "short" ? 10 : length === "long" ? 18 : 14;
 }
 
+/** 콘텐츠 길이 설정에 따른 최소 본문 글자수 — SEO 분량 확보용 */
+export function getMinimumCharCount(length: NormalizedGenerationMeta["length"]) {
+  return length === "short" ? 1200 : length === "long" ? 2500 : 1800;
+}
+
+/** 콘텐츠 길이 설정에 따른 최소 H2(##) 헤딩 수 */
+export function getMinimumHeadingCount(length: NormalizedGenerationMeta["length"]) {
+  return length === "short" ? 3 : length === "long" ? 6 : 4;
+}
+
 /**
  * Gemini가 생성한 JSON 페이로드를 검증하고 정규화한다.
  * 최소 블록 수, FAQ 개수(3~5) 등 하드 룰을 적용하며, 위반 시 에러를 던진다.
@@ -497,6 +511,22 @@ export function validateGeneratedPayload(
   const minimumBlocks = getMinimumBlockCount(generationMeta.length);
   if (content.length < minimumBlocks) {
     throw new Error(`Generated content must contain at least ${minimumBlocks} content blocks`);
+  }
+
+  const minimumChars = getMinimumCharCount(generationMeta.length);
+  const totalChars = content.reduce((sum, block) => sum + block.length, 0);
+  if (totalChars < minimumChars) {
+    throw new Error(
+      `Generated content is too short (${totalChars} chars). Minimum is ${minimumChars} for length=${generationMeta.length}`,
+    );
+  }
+
+  const minimumHeadings = getMinimumHeadingCount(generationMeta.length);
+  const headingCount = content.filter((block) => block.startsWith("## ")).length;
+  if (headingCount < minimumHeadings) {
+    throw new Error(
+      `Generated content must contain at least ${minimumHeadings} H2 headings (got ${headingCount})`,
+    );
   }
 
   const tags = Array.isArray(source.tags)

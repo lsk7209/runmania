@@ -13,11 +13,17 @@ const Diagnosis = () => {
   const [phase, setPhase] = useState<Phase>("intro");
   const [result, setResult] = useState<DiagnosisResult | null>(null);
 
+  const isResultPhase = phase === "result";
   usePageMeta({
-    title: "러닝화 무료 발 진단 | 3분 맞춤 신발 추천 | 런닝화매니아",
-    description: "7개 질문으로 내 발에 맞는 러닝화를 찾아드립니다. 족저근막염, 편평족, 무릎 통증 등 발 상태별 맞춤 러닝화 추천.",
+    title: isResultPhase
+      ? "내 진단 결과 | 런닝화매니아"
+      : "러닝화 무료 발 진단 | 3분 맞춤 신발 추천 | 런닝화매니아",
+    description: isResultPhase
+      ? "런닝화매니아에서 진단한 내 맞춤 러닝화 결과입니다."
+      : "7개 질문으로 내 발에 맞는 러닝화를 찾아드립니다. 족저근막염, 편평족, 무릎 통증 등 발 상태별 맞춤 러닝화 추천.",
     canonicalPath: "/tools/diagnosis",
     keywords: "러닝화 진단, 발 진단, 맞춤 러닝화, 족저근막염 신발, 편평족 러닝화",
+    noindex: isResultPhase,
   });
 
   const handleQuestionsComplete = useCallback((answers: UserAnswers) => {
