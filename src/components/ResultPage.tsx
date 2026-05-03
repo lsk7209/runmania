@@ -43,7 +43,15 @@ const ShoeImage = ({ shoe }: { shoe: Shoe }) => {
   if (!img) return null;
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-background">
-      <img src={img} alt={shoe.name} className="h-40 w-full object-cover" />
+      <img
+        src={img}
+        alt={shoe.name}
+        width={640}
+        height={512}
+        loading="lazy"
+        decoding="async"
+        className="h-40 w-full object-cover"
+      />
     </div>
   );
 };
@@ -339,7 +347,15 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
                   <div key={shoe.name} className="rounded-xl border border-destructive/20 bg-destructive/5 overflow-hidden">
                     {getShoeImage(shoe.name) && (
                       <div className="relative">
-                        <img src={getShoeImage(shoe.name)} alt={shoe.name} className="h-32 w-full object-cover opacity-40" />
+                        <img
+                          src={getShoeImage(shoe.name)}
+                          alt={shoe.name}
+                          width={640}
+                          height={512}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-32 w-full object-cover opacity-40"
+                        />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="rounded-full bg-destructive/90 px-4 py-1.5 text-xs font-bold text-destructive-foreground">
                             착용 금지

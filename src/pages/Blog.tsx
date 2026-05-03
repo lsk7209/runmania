@@ -169,15 +169,20 @@ const POST_CATEGORY: Record<string, CategoryKey> = {
   "hip-pain-running-shoes": "pain",
   "flat-foot-stability": "body",
   "wide-foot-running-shoes": "body",
+  "narrow-foot-running-shoes": "body",
   "overweight-running-shoes": "body",
   "high-arch-running-shoes": "body",
   "supination-running-shoes": "body",
   "women-running-shoes": "body",
   "nike-vs-newbalance": "compare",
   "hoka-vs-asics": "compare",
+  "hoka-bondi-vs-clifton": "compare",
   "brooks-vs-saucony": "compare",
   "best-running-shoes-2025": "tips",
   "beginner-running-shoe-guide": "tips",
+  "running-shoe-size-guide": "tips",
+  "running-insole-guide": "tips",
+  "5k-running-shoes": "tips",
   "running-shoe-lifespan": "tips",
   "treadmill-vs-outdoor-shoes": "tips",
   "running-shoe-stack-height": "tips",
@@ -408,30 +413,6 @@ const TableOfContents = ({ content }: { content: string[] }) => {
       )}
     </div>
   );
-};
-
-/* ─── useDocumentMeta ─── */
-
-const useDocumentMeta = (title: string, description: string) => {
-  useEffect(() => {
-    const prevTitle = document.title;
-    const metaDesc = document.querySelector('meta[name="description"]');
-    const prevDesc = metaDesc?.getAttribute("content") ?? "";
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    const ogDesc = document.querySelector('meta[property="og:description"]');
-
-    document.title = title;
-    metaDesc?.setAttribute("content", description);
-    ogTitle?.setAttribute("content", title);
-    ogDesc?.setAttribute("content", description);
-
-    return () => {
-      document.title = prevTitle;
-      metaDesc?.setAttribute("content", prevDesc);
-      ogTitle?.setAttribute("content", prevTitle);
-      ogDesc?.setAttribute("content", prevDesc);
-    };
-  }, [title, description]);
 };
 
 /* ─── Reading Progress Bar ─── */
@@ -1122,18 +1103,19 @@ const BlogDetail = ({ slug }: { slug: string }) => {
       .catch(() => {});
   }, [post?.slug]);
 
-  useDocumentMeta(seoTitle, seoDescription);
+  usePageMeta({
+    title: seoTitle,
+    description: seoDescription,
+    canonicalPath: post ? `/blog/${post.slug}` : "/blog",
+    keywords: post?.tags?.length ? post.tags.join(", ") : undefined,
+    image: post?.heroImage,
+    imageAlt: post?.title,
+    type: "article",
+  });
 
-  // Canonical + JSON-LD (Article + Breadcrumb + FAQ)
+  // JSON-LD (Article + Breadcrumb + FAQ) — canonical은 usePageMeta가 처리
   useEffect(() => {
     if (!post) return;
-
-    // Canonical tag
-    const canonical = document.createElement("link");
-    canonical.rel = "canonical";
-    canonical.href = `https://runmania.kr/blog/${post.slug}`;
-    canonical.id = "blog-canonical";
-    document.head.appendChild(canonical);
 
     // Article JSON-LD
     const articleLd = post.generationMeta?.schemaJson || {
@@ -1215,7 +1197,6 @@ const BlogDetail = ({ slug }: { slug: string }) => {
 
     return () => {
       document.getElementById("blog-jsonld")?.remove();
-      document.getElementById("blog-canonical")?.remove();
     };
   }, [post, seoDescription]);
 

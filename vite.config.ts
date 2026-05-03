@@ -34,8 +34,8 @@ function sitemapPlugin(): Plugin {
           });
         }
 
-        // Parse blog posts from Blog.tsx
-        const blogPath = path.resolve(__dirname, "src/pages/Blog.tsx");
+        // Parse blog posts from localBlogPosts.ts (the actual content source)
+        const blogPath = path.resolve(__dirname, "src/data/localBlogPosts.ts");
         const blogSrc = fs.readFileSync(blogPath, "utf-8");
         const slugs: string[] = [];
         const dates: string[] = [];
@@ -139,7 +139,7 @@ function rssPlugin(): Plugin {
     closeBundle() {
       try {
         const BASE_URL = "https://runmania.kr";
-        const blogPath = path.resolve(__dirname, "src/pages/Blog.tsx");
+        const blogPath = path.resolve(__dirname, "src/data/localBlogPosts.ts");
         const blogSrc = fs.readFileSync(blogPath, "utf-8");
 
         const slugs: string[] = [];
@@ -354,6 +354,41 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
+      },
+    },
+    build: {
+      target: "es2020",
+      cssCodeSplit: true,
+      sourcemap: false,
+      reportCompressedSize: false,
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return undefined;
+            if (id.includes("react-router")) return "router-vendor";
+            if (
+              id.includes("/react/") ||
+              id.includes("/react-dom/") ||
+              id.includes("scheduler")
+            ) {
+              return "react-vendor";
+            }
+            if (id.includes("@radix-ui")) return "radix-vendor";
+            if (id.includes("framer-motion")) return "motion-vendor";
+            if (id.includes("@tanstack/react-query")) return "query-vendor";
+            if (
+              id.includes("react-hook-form") ||
+              id.includes("@hookform") ||
+              id.includes("/zod/")
+            ) {
+              return "form-vendor";
+            }
+            if (id.includes("lucide-react")) return "icons-vendor";
+            if (id.includes("recharts") || id.includes("d3-")) return "charts-vendor";
+            return "vendor";
+          },
+        },
       },
     },
   };

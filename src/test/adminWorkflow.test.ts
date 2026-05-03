@@ -299,12 +299,20 @@ describe("admin workflow guards", () => {
       { question: "Q3", answer: "A3" },
     ];
 
+    // Long block string used so we never trip the char-count or H2 gates first when
+    // we want to specifically assert the block-count and FAQ-count behaviors.
+    const longBody = "본문 ".repeat(120);
+    const buildBlocks = (count: number) =>
+      Array.from({ length: count }, (_, index) =>
+        index < 5 ? `## 소제목 ${index + 1}` : `${longBody}블록 ${index + 1}`,
+      );
+
     expect(() =>
       validateGeneratedPayload(
         {
           title: "Title",
           excerpt: "Excerpt",
-          content: Array.from({ length: 13 }, (_, index) => `Block ${index + 1}`),
+          content: buildBlocks(13),
           tags: ["tag"],
           faq,
         },
@@ -317,13 +325,39 @@ describe("admin workflow guards", () => {
         {
           title: "Title",
           excerpt: "Excerpt",
-          content: Array.from({ length: 14 }, (_, index) => `Block ${index + 1}`),
+          content: buildBlocks(14),
           tags: ["tag"],
           faq: faq.slice(0, 2),
         },
         { length: "medium" },
       ),
     ).toThrow("between 3 and 5 items");
+
+    expect(() =>
+      validateGeneratedPayload(
+        {
+          title: "Title",
+          excerpt: "Excerpt",
+          content: Array.from({ length: 14 }, (_, index) => `Block ${index + 1}`),
+          tags: ["tag"],
+          faq,
+        },
+        { length: "medium" },
+      ),
+    ).toThrow("Generated content is too short");
+
+    expect(() =>
+      validateGeneratedPayload(
+        {
+          title: "Title",
+          excerpt: "Excerpt",
+          content: Array.from({ length: 14 }, () => longBody),
+          tags: ["tag"],
+          faq,
+        },
+        { length: "medium" },
+      ),
+    ).toThrow("at least 4 H2 headings");
   });
 
   it("requires scheduled_at for scheduled posts", async () => {
