@@ -28,14 +28,7 @@ function indexNowPlugin(): Plugin {
     name: "vite-plugin-indexnow",
     async closeBundle() {
       try {
-        // Read generated sitemap to extract URLs
-        const sitemapPath = path.resolve(__dirname, "dist/sitemap.xml");
-        if (!fs.existsSync(sitemapPath)) {
-          console.warn("⚠️ IndexNow skipped: sitemap.xml not found");
-          return;
-        }
-
-        const sitemapXml = fs.readFileSync(sitemapPath, "utf-8");
+        const sitemapXml = await loadSitemapXml(BASE_URL);
         const locRe = /<loc>([^<]+)<\/loc>/g;
         const urlList: string[] = [];
         let match: RegExpExecArray | null;
@@ -84,6 +77,19 @@ function rssPlugin(): Plugin {
       console.log("✅ rss.xml served dynamically from /api/rss");
     },
   };
+}
+
+async function loadSitemapXml(baseUrl: string) {
+  const sitemapPath = path.resolve(__dirname, "dist/sitemap.xml");
+  if (fs.existsSync(sitemapPath)) {
+    return fs.readFileSync(sitemapPath, "utf-8");
+  }
+
+  const response = await fetch(`${baseUrl}/sitemap.xml`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch dynamic sitemap: ${response.status}`);
+  }
+  return response.text();
 }
 
 function devApiPlugin(): Plugin {
