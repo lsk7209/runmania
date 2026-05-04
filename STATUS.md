@@ -20,9 +20,9 @@
 - 대표 URL: `https://www.runmania.kr`
 
 ## 주의
-- 운영 DB 상태: idea draft 298개, scheduled 4개, published 42개
+- 운영 DB 상태: idea draft 298개, scheduled 4개, published 43개 확인
 - 신규 예약: 2026-05-07 05:00 KST, 2026-05-07 10:00 KST
-- 공개 URL 확인 완료: `/sitemap.xml` 53 URL, `/rss.xml`·`/feed.xml` 41 item
+- 공개 URL 확인 완료: `/sitemap.xml` 55 URL, `/rss.xml`·`/feed.xml` 43 item
 - AdSense API 확인: `payment-hold`, `phone-pin-verification`은 콘솔 본인 처리 필요
 - ads.txt 확인: `google.com, pub-3050601904412736, DIRECT, f08c47fec0942fa0`
 - 로컬 dev API 검증 시 `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` 환경변수 필요
