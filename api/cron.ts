@@ -12,6 +12,9 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { generateContentForPost } from "./admin-generate.js";
 import { ensureContentSchema, tursoClient } from "./db.js";
 
+const BASE_URL = "https://runmania.kr";
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? "b1c3e5a7d9f2e4b6a8c0d2e4f6a8b0c1";
+
 type AppSettingsRow = {
   auto_publish_enabled?: boolean | number | string | null;
   publish_interval_hours?: number | string | null;
@@ -66,6 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (scheduledRows.length > 0) {
       const scheduledPost = scheduledRows[0] as unknown as PublishCandidateRow;
       await publishPost(scheduledPost.id);
+      await submitIndexNowForSlug(scheduledPost.slug);
       console.log(`[Cron] Published scheduled post: ${scheduledPost.title} (${scheduledPost.slug})`);
       return res.status(200).json({
         success: true,
@@ -142,6 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const draft = draftResult.rows[0] as unknown as PublishCandidateRow;
     await publishPost(draft.id);
+    await submitIndexNowForSlug(draft.slug);
     console.log(`[Cron] Auto-published approved draft: ${draft.title} (${draft.slug})`);
 
     return res.status(200).json({
@@ -165,6 +170,26 @@ async function publishPost(id: string) {
           WHERE id = ?`,
     args: [id],
   });
+}
+
+async function submitIndexNowForSlug(slug: string) {
+  if (process.env.NODE_ENV === "test") return;
+
+  try {
+    const response = await fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        host: "runmania.kr",
+        key: INDEXNOW_KEY,
+        keyLocation: `${BASE_URL}/${INDEXNOW_KEY}.txt`,
+        urlList: [`${BASE_URL}/blog/${slug}`],
+      }),
+    });
+    console.log(`[Cron] IndexNow submitted for ${slug}: ${response.status}`);
+  } catch (error: unknown) {
+    console.warn(`[Cron] IndexNow submission failed for ${slug}: ${getErrorMessage(error, "Unknown error")}`);
+  }
 }
 
 /** DB에서 다양한 타입으로 저장될 수 있는 auto_publish_enabled 값을 boolean으로 변환 */
