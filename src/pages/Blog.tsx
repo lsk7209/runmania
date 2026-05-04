@@ -813,6 +813,82 @@ const parseComparison = (raw: string) => {
   );
 };
 
+const CHECKLIST_LINE = /^-\s+\[[ xX]\]\s+/;
+const BULLET_LINE = /^-\s+/;
+const QUOTE_LINE = /^>\s?/;
+
+const stripChecklistPrefix = (line: string) =>
+  line.replace(CHECKLIST_LINE, "").trim();
+
+const stripBulletPrefix = (line: string) =>
+  line.replace(BULLET_LINE, "").trim();
+
+const stripQuotePrefix = (line: string) => line.replace(QUOTE_LINE, "").trim();
+
+const renderMarkdownList = (
+  items: string[],
+  key: string,
+  checklist = false,
+) => (
+  <ul key={key} className="my-4 space-y-2">
+    {items.map((item, i) => (
+      <li key={i} className="flex items-start gap-2.5 text-sm leading-relaxed">
+        {checklist ? (
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        ) : (
+          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+        )}
+        <span className="text-secondary-foreground">
+          {renderTextWithLinks(item)}
+        </span>
+      </li>
+    ))}
+  </ul>
+);
+
+const renderMarkdownQuote = (lines: string[], key: string) => {
+  const cleanedLines = lines.map(stripQuotePrefix).filter(Boolean);
+  const [firstLine, ...restLines] = cleanedLines;
+  const title = firstLine?.startsWith("**") ? firstLine : "";
+  const bodyLines = title ? restLines : cleanedLines;
+  const listItems = bodyLines
+    .filter((line) => BULLET_LINE.test(line))
+    .map(stripBulletPrefix);
+  const plainLines = bodyLines.filter((line) => !BULLET_LINE.test(line));
+
+  return (
+    <blockquote
+      key={key}
+      className="my-6 border-l-4 border-primary/50 bg-primary/5 rounded-r-xl py-4 px-5"
+    >
+      <Quote className="mb-2 h-5 w-5 text-primary/40" />
+      {title && (
+        <p className="mb-2 text-sm font-bold text-foreground">
+          {renderTextWithLinks(title)}
+        </p>
+      )}
+      {plainLines.map((line, i) => (
+        <p key={i} className="text-sm leading-relaxed text-foreground">
+          {renderTextWithLinks(line)}
+        </p>
+      ))}
+      {listItems.length > 0 && (
+        <ul className="mt-2 space-y-1.5">
+          {listItems.map((item, i) => (
+            <li
+              key={i}
+              className="flex items-start gap-2 text-sm leading-relaxed text-secondary-foreground"
+            >
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              <span>{renderTextWithLinks(item)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </blockquote>
+  );
+};
+
 const renderSegmentWithLinks = (
   text: string,
   keyPrefix: string,
@@ -880,6 +956,9 @@ const renderBodyLines = (
 ): React.ReactNode => {
   const result: React.ReactNode[] = [];
   let tableBuffer: string[] = [];
+  let quoteBuffer: string[] = [];
+  let listBuffer: string[] = [];
+  let checklistBuffer: string[] = [];
 
   const flushTable = (key: string) => {
     if (tableBuffer.length === 0) return;
@@ -931,40 +1010,83 @@ const renderBodyLines = (
     tableBuffer = [];
   };
 
+  const flushQuote = (key: string) => {
+    if (quoteBuffer.length === 0) return;
+    result.push(renderMarkdownQuote(quoteBuffer, key));
+    quoteBuffer = [];
+  };
+
+  const flushList = (key: string) => {
+    if (listBuffer.length === 0) return;
+    result.push(renderMarkdownList(listBuffer, key));
+    listBuffer = [];
+  };
+
+  const flushChecklist = (key: string) => {
+    if (checklistBuffer.length === 0) return;
+    result.push(renderMarkdownList(checklistBuffer, key, true));
+    checklistBuffer = [];
+  };
+
+  const flushTextBlocks = (key: string) => {
+    flushQuote(`${key}-q`);
+    flushList(`${key}-l`);
+    flushChecklist(`${key}-c`);
+  };
+
   lines.forEach((line, idx) => {
-    if (line.trim().startsWith("|")) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith("|")) {
+      flushTextBlocks(`${keyPrefix}-${idx}`);
       tableBuffer.push(line);
-    } else {
-      flushTable(`${keyPrefix}-t${idx}`);
-      if (line.includes("**") || line.startsWith("- ")) {
-        result.push(
-          <div
-            key={idx}
-            className="text-sm leading-relaxed text-secondary-foreground"
-          >
-            {line.split("**").map((part, j) =>
-              j % 2 === 1 ? (
-                <strong key={j} className="text-foreground">
-                  {part}
-                </strong>
-              ) : (
-                <span key={j}>{renderTextWithLinks(part)}</span>
-              ),
-            )}
-          </div>,
-        );
-      } else {
-        result.push(
-          <p
-            key={idx}
-            className="text-sm leading-relaxed text-secondary-foreground"
-          >
-            {renderTextWithLinks(line)}
-          </p>,
-        );
-      }
+      return;
     }
+
+    if (QUOTE_LINE.test(trimmedLine)) {
+      flushTable(`${keyPrefix}-t${idx}`);
+      flushList(`${keyPrefix}-l${idx}`);
+      flushChecklist(`${keyPrefix}-c${idx}`);
+      quoteBuffer.push(trimmedLine);
+      return;
+    }
+
+    if (CHECKLIST_LINE.test(trimmedLine)) {
+      flushTable(`${keyPrefix}-t${idx}`);
+      flushQuote(`${keyPrefix}-q${idx}`);
+      flushList(`${keyPrefix}-l${idx}`);
+      checklistBuffer.push(stripChecklistPrefix(trimmedLine));
+      return;
+    }
+
+    if (BULLET_LINE.test(trimmedLine)) {
+      flushTable(`${keyPrefix}-t${idx}`);
+      flushQuote(`${keyPrefix}-q${idx}`);
+      flushChecklist(`${keyPrefix}-c${idx}`);
+      listBuffer.push(stripBulletPrefix(trimmedLine));
+      return;
+    }
+
+    flushTable(`${keyPrefix}-t${idx}`);
+    flushTextBlocks(`${keyPrefix}-${idx}`);
+    if (line.includes("**")) {
+      result.push(
+        <div
+          key={idx}
+          className="text-sm leading-relaxed text-secondary-foreground"
+        >
+          {renderTextWithLinks(line)}
+        </div>,
+      );
+      return;
+    }
+
+    result.push(
+      <p key={idx} className="text-sm leading-relaxed text-secondary-foreground">
+        {renderTextWithLinks(line)}
+      </p>,
+    );
   });
+  flushTextBlocks(`${keyPrefix}-end`);
   flushTable(`${keyPrefix}-tend`);
 
   return <>{result}</>;
@@ -1021,7 +1143,32 @@ const renderContent = (paragraph: string, i: number) => {
         ))}
       </div>
     );
-  if (paragraph.startsWith("**") || paragraph.startsWith("- "))
+  if (paragraph.startsWith(">"))
+    return (
+      <div key={i}>
+        {renderMarkdownQuote(paragraph.split("\n"), String(i))}
+      </div>
+    );
+  if (CHECKLIST_LINE.test(paragraph.trim()))
+    return (
+      <div key={i}>
+        {renderMarkdownList(
+          paragraph.split("\n").map(stripChecklistPrefix).filter(Boolean),
+          String(i),
+          true,
+        )}
+      </div>
+    );
+  if (BULLET_LINE.test(paragraph.trim()))
+    return (
+      <div key={i}>
+        {renderMarkdownList(
+          paragraph.split("\n").map(stripBulletPrefix).filter(Boolean),
+          String(i),
+        )}
+      </div>
+    );
+  if (paragraph.startsWith("**"))
     return (
       <div
         key={i}
