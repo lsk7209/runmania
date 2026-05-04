@@ -1,4 +1,4 @@
-﻿# 런닝화매니아 (runmania.kr)
+# 런닝화매니아 (runmania.kr)
 
 ## 사이트 소개
 런닝화매니아는 한국 러너를 위한 러닝화 추천·리뷰·발 진단 전문 사이트입니다.
@@ -15,11 +15,11 @@
 아디다스(Adidas), 살로몬(Salomon), 온 러닝(On Running), 미즈노(Mizuno), 사코니(Saucony)
 
 ## 주요 URL
-- 홈: https://www.runmania.kr/
-- 발 진단: https://www.runmania.kr/tools/diagnosis
-- 블로그: https://www.runmania.kr/blog
-- 리뷰: https://www.runmania.kr/reviews
-- 유틸리티: https://www.runmania.kr/tools
+- [홈](https://www.runmania.kr/)
+- [발 진단](https://www.runmania.kr/tools/diagnosis)
+- [블로그](https://www.runmania.kr/blog)
+- [리뷰](https://www.runmania.kr/reviews)
+- [유틸리티](https://www.runmania.kr/tools)
 
 ## 대상 독자
 - 러닝 입문자 (첫 러닝화 구매 가이드)
