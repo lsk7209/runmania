@@ -6,7 +6,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
 
-const BASE_URL = "https://runmania.kr";
+const BASE_URL = "https://www.runmania.kr";
 const SITE_LASTMOD = "2026-05-05";
 
 const STATIC_PAGES = [

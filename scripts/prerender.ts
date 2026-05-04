@@ -7,16 +7,31 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { createClient } from "@libsql/client";
 
 const DIST = path.resolve(process.cwd(), "dist");
-const BASE_URL = "https://runmania.kr";
+const BASE_URL = "https://www.runmania.kr";
+const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 
 interface RouteConfig {
   path: string;
   title: string;
   description: string;
   keywords: string;
+  ogType?: "website" | "article";
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
+
+type DbPostRow = {
+  slug?: unknown;
+  title?: unknown;
+  excerpt?: unknown;
+  tags?: unknown;
+  published_at?: unknown;
+  updated_at?: unknown;
+  faq?: unknown;
+  generation_meta?: unknown;
+};
 
 const ROUTES: RouteConfig[] = [
   {
@@ -108,7 +123,7 @@ const ROUTES: RouteConfig[] = [
 
 function injectMeta(html: string, route: RouteConfig): string {
   const canonical = `${BASE_URL}${route.path === "/" ? "" : route.path}`;
-  const jsonLd = buildJsonLd(route, canonical);
+  const jsonLd = route.jsonLd ?? buildJsonLd(route, canonical);
 
   return html
     .replace(
@@ -130,6 +145,10 @@ function injectMeta(html: string, route: RouteConfig): string {
     .replace(
       /<meta property="og:title"[^>]*>/,
       `<meta property="og:title" content="${escapeHtml(route.title)}" />`,
+    )
+    .replace(
+      /<meta property="og:type"[^>]*>/,
+      `<meta property="og:type" content="${route.ogType ?? "website"}" />`,
     )
     .replace(
       /<meta property="og:description"[^>]*>/,
@@ -169,7 +188,7 @@ function buildJsonLd(route: RouteConfig, canonical: string) {
       "@type": "Organization",
       name: "런닝화매니아",
       url: BASE_URL,
-      logo: `${BASE_URL}/og-image.png`,
+      logo: DEFAULT_OG_IMAGE,
     },
   };
 
@@ -199,6 +218,168 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+function writeRouteHtml(baseHtml: string, route: RouteConfig) {
+  const html = injectMeta(baseHtml, route);
+  const routePath = route.path === "/" ? "" : route.path;
+  const dir = path.join(DIST, routePath);
+  ensureDir(dir);
+  const outFile = path.join(dir, "index.html");
+  fs.writeFileSync(outFile, html, "utf-8");
+  console.log(`✅ ${route.path} → dist${routePath}/index.html`);
+}
+
+function loadLocalEnv() {
+  const values: Record<string, string> = {};
+  for (const fileName of [".env.local", ".env"]) {
+    const envPath = path.resolve(process.cwd(), fileName);
+    if (!fs.existsSync(envPath)) continue;
+
+    for (const line of fs.readFileSync(envPath, "utf-8").split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eqIndex = trimmed.indexOf("=");
+      if (eqIndex < 0) continue;
+      const key = trimmed.slice(0, eqIndex).trim();
+      const value = trimmed
+        .slice(eqIndex + 1)
+        .trim()
+        .replace(/^["']|["']$/g, "");
+      values[key] = value;
+    }
+  }
+  return values;
+}
+
+function getEnvValue(localEnv: Record<string, string>, keys: string[]) {
+  for (const key of keys) {
+    const value = process.env[key] || localEnv[key];
+    if (value) return value.trim();
+  }
+  return "";
+}
+
+function fixTursoUrl(url: string) {
+  return url.startsWith("libsql://") ? url.replace("libsql://", "https://") : url;
+}
+
+function tryParseJson(value: unknown) {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeStringArray(value: unknown) {
+  const parsed = tryParseJson(value);
+  if (!Array.isArray(parsed)) return [];
+  return parsed.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function normalizeFaq(value: unknown) {
+  const parsed = tryParseJson(value);
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const source = item as Record<string, unknown>;
+      const question = String(source.question ?? "").trim();
+      const answer = String(source.answer ?? "").trim();
+      return question && answer
+        ? {
+            "@type": "Question",
+            name: question,
+            acceptedAnswer: { "@type": "Answer", text: answer },
+          }
+        : null;
+    })
+    .filter(Boolean);
+}
+
+function normalizeBlogRoute(row: DbPostRow): RouteConfig | null {
+  const slug = String(row.slug ?? "").trim();
+  const title = String(row.title ?? "").trim();
+  if (!slug || !title) return null;
+
+  const generationMeta = tryParseJson(row.generation_meta) as Record<string, unknown> | null;
+  const description =
+    String(generationMeta?.metaDescription ?? "").trim() ||
+    String(row.excerpt ?? "").trim() ||
+    `${title}에 대한 러닝화 선택 기준과 실전 체크포인트를 정리했습니다.`;
+  const tags = normalizeStringArray(row.tags);
+  const canonical = `${BASE_URL}/blog/${slug}`;
+  const publishedAt = String(row.published_at ?? "").trim();
+  const updatedAt = String(row.updated_at ?? row.published_at ?? "").trim();
+  const articleLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: title,
+    description,
+    image: DEFAULT_OG_IMAGE,
+    datePublished: publishedAt || undefined,
+    dateModified: updatedAt || publishedAt || undefined,
+    inLanguage: "ko-KR",
+    author: { "@type": "Organization", name: "런닝화매니아", url: BASE_URL },
+    publisher: {
+      "@type": "Organization",
+      name: "런닝화매니아",
+      logo: { "@type": "ImageObject", url: DEFAULT_OG_IMAGE },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+    keywords: tags.join(", "),
+  };
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "홈", item: `${BASE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "블로그", item: `${BASE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: title, item: canonical },
+    ],
+  };
+  const faqItems = normalizeFaq(row.faq);
+  const faqLd =
+    faqItems.length > 0
+      ? { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqItems }
+      : null;
+
+  return {
+    path: `/blog/${slug}`,
+    title: String(generationMeta?.metaTitle ?? "").trim() || `${title} | 런닝화매니아`,
+    description,
+    keywords: tags.join(", "),
+    ogType: "article",
+    jsonLd: [articleLd, breadcrumbLd, ...(faqLd ? [faqLd] : [])],
+  };
+}
+
+async function loadPublishedBlogRoutes() {
+  const localEnv = loadLocalEnv();
+  const databaseUrl = getEnvValue(localEnv, ["TURSO_DATABASE_URL", "turso url"]);
+  const authToken = getEnvValue(localEnv, ["TURSO_AUTH_TOKEN", "turso token"]);
+
+  if (!databaseUrl || !authToken) {
+    console.warn("⚠️ Blog detail prerender skipped: Turso env not configured");
+    return [];
+  }
+
+  const db = createClient({
+    url: fixTursoUrl(databaseUrl),
+    authToken,
+  });
+  const result = await db.execute(`
+    SELECT slug, title, excerpt, tags, published_at, updated_at, faq, generation_meta
+    FROM blog_posts
+    WHERE status = 'published' AND workflow_status = 'approved'
+    ORDER BY published_at DESC
+  `);
+
+  return result.rows
+    .map((row) => normalizeBlogRoute(row as DbPostRow))
+    .filter((route): route is RouteConfig => route !== null);
+}
+
 async function main() {
   const indexHtml = path.join(DIST, "index.html");
   if (!fs.existsSync(indexHtml)) {
@@ -207,21 +388,16 @@ async function main() {
   }
 
   const baseHtml = fs.readFileSync(indexHtml, "utf-8");
-  console.log(`🚀 Prerendering ${ROUTES.length} routes...\n`);
+  const blogRoutes = await loadPublishedBlogRoutes();
+  const routes = [...ROUTES, ...blogRoutes];
+  console.log(`🚀 Prerendering ${routes.length} routes...\n`);
 
   // deduplicate routes
   const seen = new Set<string>();
-  for (const route of ROUTES) {
+  for (const route of routes) {
     if (seen.has(route.path)) continue;
     seen.add(route.path);
-
-    const html = injectMeta(baseHtml, route);
-    const routePath = route.path === "/" ? "" : route.path;
-    const dir = path.join(DIST, routePath);
-    ensureDir(dir);
-    const outFile = path.join(dir, "index.html");
-    fs.writeFileSync(outFile, html, "utf-8");
-    console.log(`✅ ${route.path} → dist${routePath}/index.html`);
+    writeRouteHtml(baseHtml, route);
   }
 
   console.log("\n✅ Prerender complete!");

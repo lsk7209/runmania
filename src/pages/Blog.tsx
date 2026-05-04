@@ -42,6 +42,7 @@ import { mapDbPostToLocal } from "@/data/blogPostUtils";
 const BLOG_LIST_QUERY_KEY = ["blog-post-list"];
 const BLOG_POST_QUERY_KEY = "blog-post";
 const BLOG_CACHE_MS = 5 * 60 * 1000;
+const CANONICAL_ORIGIN = "https://www.runmania.kr";
 
 const loadLocalPosts = async () => {
   const { LOCAL_POSTS } = await import("@/data/localBlogPosts");
@@ -232,7 +233,7 @@ const BlogList = () => {
         itemListElement: posts.map((post, i) => ({
           "@type": "ListItem",
           position: i + 1,
-          url: `${window.location.origin}/blog/${post.slug}`,
+          url: `${CANONICAL_ORIGIN}/blog/${post.slug}`,
           name: post.title,
         })),
       },
@@ -467,7 +468,7 @@ const ReadingProgress = () => {
 
 const SocialShare = ({ title, slug }: { title: string; slug: string }) => {
   const [copied, setCopied] = useState(false);
-  const url = `https://runmania.kr/blog/${slug}`;
+  const url = `${CANONICAL_ORIGIN}/blog/${slug}`;
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(url).then(() => {
@@ -1146,42 +1147,54 @@ const BlogDetail = ({ slug }: { slug: string }) => {
   // Canonical + JSON-LD (Article + Breadcrumb + FAQ)
   useEffect(() => {
     if (!post) return;
+    const articleUrl = `${CANONICAL_ORIGIN}/blog/${post.slug}`;
 
     // Canonical tag
-    const canonical = document.createElement("link");
-    canonical.rel = "canonical";
-    canonical.href = `https://runmania.kr/blog/${post.slug}`;
-    canonical.id = "blog-canonical";
-    document.head.appendChild(canonical);
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    const previousCanonical = canonical?.getAttribute("href") ?? null;
+    const createdCanonical = !canonical;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    canonical.href = articleUrl;
+
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    const previousOgUrl = ogUrl?.getAttribute("content") ?? null;
+    ogUrl?.setAttribute("content", articleUrl);
 
     // Article JSON-LD
-    const articleLd = post.generationMeta?.schemaJson || {
+    const rawArticleLd = post.generationMeta?.schemaJson || {
       "@context": "https://schema.org",
       "@type": "Article",
       headline: post.title,
       description: seoDescription,
-      image: `${window.location.origin}${post.heroImage}`,
+      image: `${CANONICAL_ORIGIN}${post.heroImage}`,
       datePublished: post.date,
       dateModified: post.dateModified || post.date,
       author: {
         "@type": "Organization",
         name: "런닝화매니아",
-        url: window.location.origin,
+        url: CANONICAL_ORIGIN,
       },
       publisher: {
         "@type": "Organization",
         name: "런닝화매니아",
         logo: {
           "@type": "ImageObject",
-          url: `${window.location.origin}/favicon.ico`,
+          url: `${CANONICAL_ORIGIN}/favicon.ico`,
         },
       },
       mainEntityOfPage: {
         "@type": "WebPage",
-        "@id": `https://runmania.kr/blog/${post.slug}`,
+        "@id": articleUrl,
       },
       keywords: post.tags.join(", "),
     };
+    const articleLd = JSON.parse(
+      JSON.stringify(rawArticleLd).replace(/https:\/\/runmania\.kr/g, CANONICAL_ORIGIN),
+    );
 
     // Breadcrumb JSON-LD
     const breadcrumbLd = {
@@ -1192,19 +1205,19 @@ const BlogDetail = ({ slug }: { slug: string }) => {
           "@type": "ListItem",
           position: 1,
           name: "홈",
-          item: "https://runmania.kr/",
+          item: `${CANONICAL_ORIGIN}/`,
         },
         {
           "@type": "ListItem",
           position: 2,
           name: "블로그",
-          item: "https://runmania.kr/blog",
+          item: `${CANONICAL_ORIGIN}/blog`,
         },
         {
           "@type": "ListItem",
           position: 3,
           name: post.title,
-          item: `https://runmania.kr/blog/${post.slug}`,
+          item: articleUrl,
         },
       ],
     };
@@ -1234,7 +1247,14 @@ const BlogDetail = ({ slug }: { slug: string }) => {
 
     return () => {
       document.getElementById("blog-jsonld")?.remove();
-      document.getElementById("blog-canonical")?.remove();
+      if (canonical) {
+        if (createdCanonical) {
+          canonical.remove();
+        } else if (previousCanonical) {
+          canonical.href = previousCanonical;
+        }
+      }
+      if (ogUrl && previousOgUrl) ogUrl.setAttribute("content", previousOgUrl);
     };
   }, [post, seoDescription]);
 
@@ -1259,7 +1279,7 @@ const BlogDetail = ({ slug }: { slug: string }) => {
   return (
     <>
       <ReadingProgress />
-      <div className="mx-auto max-w-2xl px-4 py-16 pt-24">
+      <main className="mx-auto max-w-2xl px-4 py-16 pt-24">
         {fallbackMessage ? (
           <DataFallbackNotice message={fallbackMessage} />
         ) : null}
@@ -1376,7 +1396,7 @@ const BlogDetail = ({ slug }: { slug: string }) => {
             </Link>
           </div>
         </motion.article>
-      </div>
+      </main>
     </>
   );
 };

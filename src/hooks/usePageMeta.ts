@@ -7,7 +7,7 @@ interface PageMetaOptions {
   keywords?: string;
 }
 
-const BASE_URL = "https://runmania.kr";
+const BASE_URL = "https://www.runmania.kr";
 
 const usePageMeta = ({ title, description, canonicalPath, keywords }: PageMetaOptions) => {
   useEffect(() => {

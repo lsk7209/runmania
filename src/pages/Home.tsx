@@ -139,15 +139,15 @@ const Home = () => {
         {
           "@type": "WebSite",
           "name": "런닝화매니아",
-          "url": "https://runmania.kr",
+          "url": "https://www.runmania.kr",
           "description": "러닝화 추천, 무료 발 진단, 러닝 초보 신발, 무릎 통증 러닝화, 족저근막염 신발 가이드.",
           "inLanguage": "ko",
         },
         {
           "@type": "Organization",
           "name": "런닝화매니아",
-          "url": "https://runmania.kr",
-          "logo": "https://runmania.kr/og-image.png",
+          "url": "https://www.runmania.kr",
+          "logo": "https://www.runmania.kr/og-image.png",
         },
         {
           "@type": "FAQPage",

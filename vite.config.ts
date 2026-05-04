@@ -22,7 +22,7 @@ function sitemapPlugin(): Plugin {
 function indexNowPlugin(): Plugin {
   const INDEXNOW_KEY =
     process.env.INDEXNOW_KEY ?? "b1c3e5a7d9f2e4b6a8c0d2e4f6a8b0c1";
-  const BASE_URL = "https://runmania.kr";
+  const BASE_URL = "https://www.runmania.kr";
 
   return {
     name: "vite-plugin-indexnow",
@@ -41,22 +41,31 @@ function indexNowPlugin(): Plugin {
           return;
         }
 
-        // 1. IndexNow ping (Bing → auto-propagates to Naver, Yandex)
+        // 1. IndexNow ping (Bing + Naver 직접 제출)
         const indexNowBody = {
-          host: "runmania.kr",
+          host: "www.runmania.kr",
           key: INDEXNOW_KEY,
           keyLocation: `${BASE_URL}/${INDEXNOW_KEY}.txt`,
           urlList,
         };
 
-        const indexNowRes = await fetch("https://api.indexnow.org/indexnow", {
-          method: "POST",
-          headers: { "Content-Type": "application/json; charset=utf-8" },
-          body: JSON.stringify(indexNowBody),
-        });
+        const endpoints = [
+          "https://api.indexnow.org/indexnow",
+          "https://www.bing.com/indexnow",
+          "https://searchadvisor.naver.com/indexnow",
+        ];
+        const responses = await Promise.all(
+          endpoints.map((endpoint) =>
+            fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json; charset=utf-8" },
+              body: JSON.stringify(indexNowBody),
+            }),
+          ),
+        );
 
         console.log(
-          `✅ IndexNow ping sent: ${indexNowRes.status} (${urlList.length} URLs → Bing/Naver/Yandex)`,
+          `✅ IndexNow ping sent: ${responses.map((res) => res.status).join(", ")} (${urlList.length} URLs)`,
         );
 
         // Google ping은 2023년 deprecate됨 → GSC에서 직접 제출 권장

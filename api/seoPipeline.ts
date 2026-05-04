@@ -232,7 +232,7 @@ export function buildSchemaJson(input: {
   seoBrief: SeoBrief;
 }) {
   const { title, slug, excerpt, faq, content, heroImage, seoBrief } = input;
-  const baseUrl = "https://runmania.kr";
+  const baseUrl = "https://www.runmania.kr";
   const headings = content.filter((block) => block.startsWith("## ")).map((block) => block.replace(/^##\s*/, "").trim());
   const articleType = seoBrief.schemaType === "HowTo" ? "HowTo" : seoBrief.schemaType === "Review" ? "ReviewNewsArticle" : "Article";
   const articleSchema: Record<string, unknown> = {

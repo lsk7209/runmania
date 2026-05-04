@@ -10,7 +10,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
-const BASE_URL = "https://runmania.kr";
+const BASE_URL = "https://www.runmania.kr";
 
 interface SitemapEntry {
   path: string;

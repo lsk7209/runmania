@@ -557,7 +557,7 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
       name: shoe.name,
       brand: { "@type": "Brand", name: shoe.brand },
       description: shoe.description,
-      image: img ?? "https://runmania.kr/og-image.png",
+      image: img ?? "https://www.runmania.kr/og-image.png",
       offers: {
         "@type": "Offer",
         priceCurrency: "KRW",

@@ -1,78 +1,78 @@
-{
+﻿{
   "site": "런닝화매니아",
-  "url": "https://runmania.kr",
+  "url": "https://www.runmania.kr",
   "description": "한국 러너를 위한 러닝화 추천·리뷰·발 진단 전문 사이트",
   "language": "ko",
   "updated": "2026-04-18",
   "pages": [
     {
-      "url": "https://runmania.kr/",
+      "url": "https://www.runmania.kr/",
       "title": "러닝화 추천 · 무료 발 진단 | 런닝화매니아",
       "description": "3분 무료 발 진단으로 내 발에 맞는 러닝화 추천",
       "type": "home"
     },
     {
-      "url": "https://runmania.kr/tools/diagnosis",
+      "url": "https://www.runmania.kr/tools/diagnosis",
       "title": "무료 발 진단 — 러닝화 맞춤 추천",
       "description": "발 유형(평발/요족/정상), 달리기 목적, 체중 기반 맞춤 러닝화 추천",
       "type": "tool"
     },
     {
-      "url": "https://runmania.kr/reviews",
+      "url": "https://www.runmania.kr/reviews",
       "title": "러닝화 리뷰 — 29개 모델 상세 비교",
       "description": "국내 유통 주요 러닝화 29개 모델 장단점·평점·추천 대상 분석",
       "type": "reviews"
     },
     {
-      "url": "https://runmania.kr/blog",
+      "url": "https://www.runmania.kr/blog",
       "title": "러닝화 블로그 — 가이드 & 팁",
       "description": "러닝화 선택법, 달리기 훈련, 부상 예방, 브랜드 비교 등 전문 콘텐츠",
       "type": "blog"
     },
     {
-      "url": "https://runmania.kr/tools",
+      "url": "https://www.runmania.kr/tools",
       "title": "러닝 유틸리티 도구 모음",
       "description": "칼로리 계산기, 심박수 구간, 완주 예측, 훈련 페이스, 체중 감량 계산기",
       "type": "tools"
     },
     {
-      "url": "https://runmania.kr/tools/calorie-calculator",
+      "url": "https://www.runmania.kr/tools/calorie-calculator",
       "title": "달리기 칼로리 계산기",
       "description": "체중·페이스·시간으로 소모 칼로리 계산 (METs 공식)",
       "type": "tool"
     },
     {
-      "url": "https://runmania.kr/tools/heart-rate-zones",
+      "url": "https://www.runmania.kr/tools/heart-rate-zones",
       "title": "심박수 훈련 구간 계산기",
       "description": "나이·안정시 심박수로 Z1~Z5 구간 계산 (Karvonen 공식)",
       "type": "tool"
     },
     {
-      "url": "https://runmania.kr/tools/race-predictor",
+      "url": "https://www.runmania.kr/tools/race-predictor",
       "title": "마라톤 완주 시간 예측기",
       "description": "현재 기록으로 5km·하프·풀마라톤 예상 완주 시간 예측 (Riegel 공식)",
       "type": "tool"
     },
     {
-      "url": "https://runmania.kr/tools/training-paces",
+      "url": "https://www.runmania.kr/tools/training-paces",
       "title": "훈련 페이스 계산기",
       "description": "레이스 기록으로 쉬운 조깅·템포런·인터벌 등 5가지 훈련 페이스 계산",
       "type": "tool"
     },
     {
-      "url": "https://runmania.kr/tools/weight-loss",
+      "url": "https://www.runmania.kr/tools/weight-loss",
       "title": "달리기 체중 감량 계산기",
       "description": "주간 달리기 습관으로 목표 체중 달성 기간 예측",
       "type": "tool"
     },
     {
-      "url": "https://runmania.kr/tools/pace-calculator",
+      "url": "https://www.runmania.kr/tools/pace-calculator",
       "title": "페이스 계산기",
       "description": "완주 시간·거리·페이스 상호 변환 계산기",
       "type": "tool"
     },
     {
-      "url": "https://runmania.kr/tools/size-converter",
+      "url": "https://www.runmania.kr/tools/size-converter",
       "title": "러닝화 사이즈 변환기",
       "description": "한국(mm) ↔ US ↔ EU ↔ UK 사이즈 변환",
       "type": "tool"
