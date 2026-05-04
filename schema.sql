@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS blog_views (
 
 CREATE TABLE IF NOT EXISTS app_settings (
   id                     INTEGER PRIMARY KEY DEFAULT 1,
-  publish_interval_hours INTEGER NOT NULL DEFAULT 24,
+  publish_interval_hours INTEGER NOT NULL DEFAULT 5,
   auto_publish_enabled   INTEGER NOT NULL DEFAULT 1,
   updated_at             TEXT NOT NULL DEFAULT (datetime('now'))
 );

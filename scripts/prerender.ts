@@ -84,13 +84,6 @@ const ROUTES: RouteConfig[] = [
     keywords: "훈련 페이스 계산, 인터벌 페이스, 템포런 페이스",
   },
   {
-    path: "/tools/training-paces",
-    title: "훈련 페이스 계산기 | 런닝화매니아",
-    description:
-      "레이스 기록으로 쉬운 조깅·템포런·인터벌 등 5가지 훈련 구간 페이스를 계산합니다.",
-    keywords: "훈련 페이스 계산, 인터벌 페이스, 템포런 페이스",
-  },
-  {
     path: "/tools/weight-loss",
     title: "달리기 체중 감량 계산기 | 런닝화매니아",
     description:
@@ -115,6 +108,7 @@ const ROUTES: RouteConfig[] = [
 
 function injectMeta(html: string, route: RouteConfig): string {
   const canonical = `${BASE_URL}${route.path === "/" ? "" : route.path}`;
+  const jsonLd = buildJsonLd(route, canonical);
 
   return html
     .replace(
@@ -152,7 +146,45 @@ function injectMeta(html: string, route: RouteConfig): string {
     .replace(
       /<meta name="twitter:description"[^>]*>/,
       `<meta name="twitter:description" content="${escapeHtml(route.description)}" />`,
+    )
+    .replace(
+      /<\/head>/,
+      `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
     );
+}
+
+function buildJsonLd(route: RouteConfig, canonical: string) {
+  const base = {
+    "@context": "https://schema.org",
+    name: route.title.replace(" | 런닝화매니아", ""),
+    description: route.description,
+    url: canonical,
+    inLanguage: "ko-KR",
+    isPartOf: {
+      "@type": "WebSite",
+      name: "런닝화매니아",
+      url: BASE_URL,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "런닝화매니아",
+      url: BASE_URL,
+      logo: `${BASE_URL}/og-image.png`,
+    },
+  };
+
+  if (route.path.startsWith("/tools/")) {
+    return {
+      ...base,
+      "@type": "WebApplication",
+      applicationCategory: "HealthApplication",
+      operatingSystem: "Web",
+    };
+  }
+
+  if (route.path === "/blog") return { ...base, "@type": "CollectionPage" };
+  if (route.path === "/reviews") return { ...base, "@type": "CollectionPage" };
+  return { ...base, "@type": route.path === "/" ? "WebSite" : "WebPage" };
 }
 
 function escapeHtml(str: string) {

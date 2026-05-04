@@ -213,7 +213,7 @@ Turso (libsql/SQLite) 사용. 스키마는 `api/db.ts`의 `ensureContentSchema()
 | 컬럼 | 타입 | 설명 |
 |------|------|------|
 | id | INTEGER PK | 항상 1 (싱글톤) |
-| publish_interval_hours | INTEGER | 자동 발행 간격 (시간, 기본 24) |
+| publish_interval_hours | INTEGER | 자동 발행 간격 (시간, 기본 5) |
 | auto_publish_enabled | INTEGER | 자동 발행 활성화 (0/1) |
 | updated_at | TEXT | 수정일 |
 

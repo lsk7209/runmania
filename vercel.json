@@ -20,6 +20,10 @@
             "destination": "/api/rss"
         },
         {
+            "source": "/feed.xml",
+            "destination": "/api/rss"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/$1"
         },

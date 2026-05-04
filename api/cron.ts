@@ -48,6 +48,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const autoPublishEnabled = isEnabled(settings.auto_publish_enabled);
     const publishIntervalHours = getPublishIntervalHours(settings.publish_interval_hours);
 
+    // 1단계: 예약 발행 — scheduled_at 시간이 지난 승인 포스트를 최우선 발행
+    const nowIso = new Date().toISOString();
+    const scheduledResult = await tursoClient.execute({
+      sql: `SELECT id, title, slug
+            FROM blog_posts
+            WHERE status = 'scheduled'
+              AND workflow_status = 'approved'
+              AND scheduled_at IS NOT NULL
+              AND scheduled_at <= ?
+            ORDER BY scheduled_at ASC, created_at ASC
+            LIMIT 1`,
+      args: [nowIso],
+    });
+    const scheduledRows = Array.isArray(scheduledResult.rows) ? scheduledResult.rows : [];
+
+    if (scheduledRows.length > 0) {
+      const scheduledPost = scheduledRows[0] as unknown as PublishCandidateRow;
+      await publishPost(scheduledPost.id);
+      console.log(`[Cron] Published scheduled post: ${scheduledPost.title} (${scheduledPost.slug})`);
+      return res.status(200).json({
+        success: true,
+        message: "Published one scheduled post",
+        publishedPost: scheduledPost.slug,
+      });
+    }
+
     // 0단계: idea 상태 드래프트 1건 AI 생성
     // Admin에서 제목만 입력(bulk_create)한 포스트를 cron이 순차적으로 1건씩 생성한다.
     // Vercel 함수 타임아웃 회피를 위해 건당 1건만 처리한다.
@@ -61,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     if (ideaResult.rows.length > 0) {
-      const ideaPost = ideaResult.rows[0] as { id: string; title: string };
+      const ideaPost = ideaResult.rows[0] as unknown as { id: string; title: string };
       console.log(`[Cron] Generating content for: ${ideaPost.title}`);
       try {
         const generationResult = await generateContentForPost({ postId: ideaPost.id });
@@ -84,37 +110,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, message: "Auto-publish disabled" });
     }
 
-    // 1단계: 예약 발행 — scheduled_at 시간이 지난 승인 포스트를 우선 발행
-    const nowIso = new Date().toISOString();
-    const scheduledResult = await tursoClient.execute({
-      sql: `SELECT id, title, slug
-            FROM blog_posts
-            WHERE status = 'scheduled'
-              AND workflow_status = 'approved'
-              AND scheduled_at IS NOT NULL
-              AND scheduled_at <= ?
-            ORDER BY scheduled_at ASC, created_at ASC
-            LIMIT 1`,
-      args: [nowIso],
-    });
-    const scheduledRows = Array.isArray(scheduledResult.rows) ? scheduledResult.rows : [];
-
-    if (scheduledRows.length > 0) {
-      const scheduledPost = scheduledRows[0] as PublishCandidateRow;
-      await publishPost(scheduledPost.id);
-      console.log(`[Cron] Published scheduled post: ${scheduledPost.title} (${scheduledPost.slug})`);
-      return res.status(200).json({
-        success: true,
-        message: "Published one scheduled post",
-        publishedPost: scheduledPost.slug,
-      });
-    }
-
-    // 2단계: 발행 간격 확인 — 마지막 발행으로부터 설정된 시간(기본 24h)이 지났는지 확인
+    // 2단계: 발행 간격 확인 — 마지막 발행으로부터 설정된 시간(기본 5h)이 지났는지 확인
     const resultLastPost = await tursoClient.execute(
       "SELECT published_at FROM blog_posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 1",
     );
-    const lastPost = (resultLastPost.rows[0] ?? null) as PublishCandidateRow | null;
+    const lastPost = (resultLastPost.rows[0] ?? null) as unknown as PublishCandidateRow | null;
 
     if (lastPost?.published_at) {
       const lastPublishedAt = new Date(lastPost.published_at);
@@ -140,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, message: "No approved posts available to publish" });
     }
 
-    const draft = draftResult.rows[0] as PublishCandidateRow;
+    const draft = draftResult.rows[0] as unknown as PublishCandidateRow;
     await publishPost(draft.id);
     console.log(`[Cron] Auto-published approved draft: ${draft.title} (${draft.slug})`);
 
@@ -175,14 +175,14 @@ function isEnabled(value: AppSettingsRow["auto_publish_enabled"]) {
   return true;
 }
 
-/** 발행 간격 시간을 숫자로 파싱한다. 유효하지 않으면 기본값 24시간 */
+/** 발행 간격 시간을 숫자로 파싱한다. 유효하지 않으면 기본값 5시간 */
 function getPublishIntervalHours(value: AppSettingsRow["publish_interval_hours"]) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
     const parsed = Number.parseFloat(value);
     if (Number.isFinite(parsed)) return parsed;
   }
-  return 24;
+  return 5;
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

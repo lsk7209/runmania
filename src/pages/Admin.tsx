@@ -268,13 +268,13 @@ const Admin = () => {
     defaultBulkScheduleStart,
   );
   const [bulkScheduleIntervalHours, setBulkScheduleIntervalHours] =
-    useState(24);
+    useState(5);
   const [bulkGenerationMeta, setBulkGenerationMeta] = useState<GenerationMeta>({
     ...defaultGenerationMeta(),
     contentType: "blog",
   });
   const [settings, setSettings] = useState({
-    publish_interval_hours: 24,
+    publish_interval_hours: 5,
     auto_publish_enabled: true,
   });
   const [form, setForm] = useState(emptyPost());
@@ -322,7 +322,7 @@ const Admin = () => {
     setBulkAutoGenerate(true);
     setBulkAutoSchedule(true);
     setBulkScheduleStartAt(defaultBulkScheduleStart());
-    setBulkScheduleIntervalHours(Number(settings.publish_interval_hours) || 24);
+    setBulkScheduleIntervalHours(Number(settings.publish_interval_hours) || 5);
     setBulkGenerationMeta({
       ...defaultGenerationMeta(),
       contentType: "blog",
@@ -1943,7 +1943,7 @@ const Admin = () => {
                   setSettings((current) => ({
                     ...current,
                     publish_interval_hours:
-                      Number.parseInt(event.target.value, 10) || 24,
+                      Number.parseInt(event.target.value, 10) || 5,
                   }))
                 }
               />

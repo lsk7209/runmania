@@ -5,11 +5,11 @@ import { ensureContentSchema, tursoClient } from "./db.js";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 type ParsedPostRow = {
-  content: unknown;
-  tags: unknown;
-  related_slugs: unknown;
-  faq: unknown;
-  generation_meta: unknown;
+  content?: unknown;
+  tags?: unknown;
+  related_slugs?: unknown;
+  faq?: unknown;
+  generation_meta?: unknown;
   [key: string]: unknown;
 };
 
@@ -38,6 +38,7 @@ type PublishWorkflowRow = {
   id: string;
   workflow_status?: string | null;
   status?: string | null;
+  generation_meta?: unknown;
 };
 
 type SettingsRow = {
@@ -93,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       case "create": {
         const normalized = validatePostMutation(data);
-        if (!normalized.ok) {
+        if (normalized.ok === false) {
           return res
             .status(normalized.status)
             .json({ error: normalized.error });
@@ -129,7 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       case "update": {
         const normalized = validatePostMutation(data);
-        if (!normalized.ok) {
+        if (normalized.ok === false) {
           return res
             .status(normalized.status)
             .json({ error: normalized.error });
@@ -181,7 +182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(404).json({ error: "Post not found" });
         }
 
-        const post = result.rows[0] as PublishWorkflowRow;
+        const post = result.rows[0] as unknown as PublishWorkflowRow;
         if (post.workflow_status !== "approved") {
           return res
             .status(409)
@@ -236,7 +237,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(404).json({ error: "Post not found" });
         }
 
-        const post = result.rows[0] as PublishWorkflowRow;
+        const post = result.rows[0] as unknown as PublishWorkflowRow;
         if (
           post.status === "published" &&
           data.workflow_status !== "approved"
@@ -440,13 +441,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 related_slugs=excluded.related_slugs, faq=excluded.faq, updated_at=CURRENT_TIMESTAMP`,
             args: [
               id,
-              post.title,
-              post.slug,
-              post.excerpt ?? null,
+              String(post.title ?? ""),
+              String(post.slug ?? ""),
+              normalizeNullableString(post.excerpt),
               JSON.stringify(post.content ?? []),
               JSON.stringify(post.tags ?? []),
-              post.readTime ?? post.read_time ?? null,
-              post.heroImagePath ?? post.hero_image ?? null,
+              normalizeNullableString(post.readTime ?? post.read_time),
+              normalizeNullableString(post.heroImagePath ?? post.hero_image),
               JSON.stringify(post.relatedSlugs ?? post.related_slugs ?? []),
               JSON.stringify(post.faq ?? []),
             ],
@@ -478,10 +479,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json(
           row
             ? {
-                publish_interval_hours: row.publish_interval_hours ?? 24,
+                publish_interval_hours: row.publish_interval_hours ?? 5,
                 auto_publish_enabled: Boolean(row.auto_publish_enabled ?? 1),
               }
-            : { publish_interval_hours: 24, auto_publish_enabled: true },
+            : { publish_interval_hours: 5, auto_publish_enabled: true },
         );
       }
 
@@ -494,7 +495,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               auto_publish_enabled=excluded.auto_publish_enabled,
               updated_at=CURRENT_TIMESTAMP`,
           args: [
-            data.publish_interval_hours ?? 24,
+            data.publish_interval_hours ?? 5,
             data.auto_publish_enabled ? 1 : 0,
           ],
         });
@@ -564,7 +565,7 @@ async function getDefaultPublishIntervalHours() {
     "SELECT publish_interval_hours FROM app_settings WHERE id = 1",
   );
   const row = result.rows[0] as SettingsRow | undefined;
-  return normalizePositiveNumber(row?.publish_interval_hours) ?? 24;
+  return normalizePositiveNumber(row?.publish_interval_hours) ?? 5;
 }
 
 function validatePostMutation(data: unknown): PostMutationValidation {

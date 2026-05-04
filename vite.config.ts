@@ -11,67 +11,9 @@ function sitemapPlugin(): Plugin {
   return {
     name: "vite-plugin-sitemap",
     closeBundle() {
-      try {
-        const BASE_URL = "https://runmania.kr";
-
-        // Parse static pages from sitemapData.ts
-        const sitemapDataPath = path.resolve(__dirname, "src/sitemapData.ts");
-        const sitemapSrc = fs.readFileSync(sitemapDataPath, "utf-8");
-        const staticEntries: {
-          path: string;
-          changefreq: string;
-          priority: number;
-          lastmod?: string;
-        }[] = [];
-        const pageRe =
-          /\{\s*path:\s*"([^"]+)",\s*changefreq:\s*"([^"]+)",\s*priority:\s*([\d.]+)/g;
-        let m: RegExpExecArray | null;
-        while ((m = pageRe.exec(sitemapSrc)) !== null) {
-          staticEntries.push({
-            path: m[1],
-            changefreq: m[2],
-            priority: parseFloat(m[3]),
-          });
-        }
-
-        // Parse blog posts from Blog.tsx
-        const blogPath = path.resolve(__dirname, "src/pages/Blog.tsx");
-        const blogSrc = fs.readFileSync(blogPath, "utf-8");
-        const slugs: string[] = [];
-        const dates: string[] = [];
-        const slugRe = /slug:\s*"([^"]+)"/g;
-        const dateRe = /dateModified:\s*"([^"]+)"/g;
-        while ((m = slugRe.exec(blogSrc)) !== null) slugs.push(m[1]);
-        while ((m = dateRe.exec(blogSrc)) !== null) dates.push(m[1]);
-
-        const blogEntries = slugs.map((s, i) => ({
-          path: `/blog/${s}`,
-          changefreq: "monthly",
-          priority: 0.7,
-          lastmod: dates[i],
-        }));
-
-        const all = [...staticEntries, ...blogEntries];
-        const urls = all
-          .map((e) => {
-            let xml = `  <url>\n    <loc>${BASE_URL}${e.path}</loc>\n`;
-            if (e.lastmod) xml += `    <lastmod>${e.lastmod}</lastmod>\n`;
-            xml += `    <changefreq>${e.changefreq}</changefreq>\n`;
-            xml += `    <priority>${e.priority.toFixed(1)}</priority>\n`;
-            xml += `  </url>`;
-            return xml;
-          })
-          .join("\n");
-
-        const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
-        const outPath = path.resolve(__dirname, "dist/sitemap.xml");
-        if (fs.existsSync(path.dirname(outPath))) {
-          fs.writeFileSync(outPath, xml, "utf-8");
-          console.log(`✅ sitemap.xml auto-generated with ${all.length} URLs`);
-        }
-      } catch (e) {
-        console.warn("⚠️ Sitemap generation skipped:", e);
-      }
+      const outPath = path.resolve(__dirname, "dist/sitemap.xml");
+      if (fs.existsSync(outPath)) fs.rmSync(outPath);
+      console.log("✅ sitemap.xml served dynamically from /api/sitemap");
     },
   };
 }
@@ -137,62 +79,9 @@ function rssPlugin(): Plugin {
   return {
     name: "vite-plugin-rss",
     closeBundle() {
-      try {
-        const BASE_URL = "https://runmania.kr";
-        const blogPath = path.resolve(__dirname, "src/pages/Blog.tsx");
-        const blogSrc = fs.readFileSync(blogPath, "utf-8");
-
-        const slugs: string[] = [];
-        const titles: string[] = [];
-        const excerpts: string[] = [];
-        const dates: string[] = [];
-
-        let m: RegExpExecArray | null;
-        const slugRe = /slug:\s*"([^"]+)"/g;
-        const titleRe = /title:\s*"([^"]+)"/g;
-        const excerptRe = /excerpt:\s*"([^"]+)"/g;
-        const dateRe = /date:\s*"(\d{4}-\d{2}-\d{2})"/g;
-
-        while ((m = slugRe.exec(blogSrc)) !== null) slugs.push(m[1]);
-        while ((m = titleRe.exec(blogSrc)) !== null) titles.push(m[1]);
-        while ((m = excerptRe.exec(blogSrc)) !== null) excerpts.push(m[1]);
-        while ((m = dateRe.exec(blogSrc)) !== null) dates.push(m[1]);
-
-        const items = slugs
-          .map((slug, i) => {
-            const pubDate = dates[i]
-              ? new Date(dates[i]).toUTCString()
-              : new Date().toUTCString();
-            return `    <item>
-      <title><![CDATA[${titles[i] || slug}]]></title>
-      <link>${BASE_URL}/blog/${slug}</link>
-      <description><![CDATA[${excerpts[i] || ""}]]></description>
-      <pubDate>${pubDate}</pubDate>
-      <guid>${BASE_URL}/blog/${slug}</guid>
-    </item>`;
-          })
-          .join("\n");
-
-        const rss = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>런닝화매니아 블로그</title>
-    <link>${BASE_URL}/blog</link>
-    <description>러닝화 추천, 리뷰, 발 진단 가이드</description>
-    <language>ko</language>
-    <atom:link href="${BASE_URL}/rss.xml" rel="self" type="application/rss+xml"/>
-${items}
-  </channel>
-</rss>`;
-
-        const outPath = path.resolve(__dirname, "dist/rss.xml");
-        if (fs.existsSync(path.dirname(outPath))) {
-          fs.writeFileSync(outPath, rss, "utf-8");
-          console.log(`✅ rss.xml auto-generated with ${slugs.length} items`);
-        }
-      } catch (e) {
-        console.warn("⚠️ RSS generation skipped:", e);
-      }
+      const outPath = path.resolve(__dirname, "dist/rss.xml");
+      if (fs.existsSync(outPath)) fs.rmSync(outPath);
+      console.log("✅ rss.xml served dynamically from /api/rss");
     },
   };
 }
@@ -334,6 +223,7 @@ function parseRequestBody(req: IncomingMessage, bodyText: string) {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   Object.assign(process.env, env);
+  const shouldSubmitIndexNow = env.SUBMIT_INDEXNOW === "true";
 
   return {
     server: {
@@ -348,7 +238,7 @@ export default defineConfig(({ mode }) => {
       devApiPlugin(),
       mode === "development" && componentTagger(),
       sitemapPlugin(),
-      indexNowPlugin(),
+      shouldSubmitIndexNow && indexNowPlugin(),
       rssPlugin(),
     ].filter(Boolean),
     resolve: {

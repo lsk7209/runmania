@@ -3,10 +3,11 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Footprints, ArrowRight, Activity, BookOpen, Star, Zap,
-  AlertTriangle, Shield, Ruler
+  AlertTriangle, Shield, Ruler, CheckCircle2, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import usePageMeta from "@/hooks/usePageMeta";
+import { trackEvent } from "@/lib/analytics";
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -89,6 +90,40 @@ const reviewHighlights = [
   },
 ];
 
+const selectionGuide = [
+  {
+    title: "발볼",
+    description: "새끼발가락 압박, 갑피 터짐, 발등 통증이 잦다면 2E·4E 라스트를 먼저 확인합니다.",
+  },
+  {
+    title: "아치",
+    description: "평발·과내전은 안정화, 요족·과외전은 충격 흡수와 중립 쿠션을 우선 비교합니다.",
+  },
+  {
+    title: "러닝 목적",
+    description: "입문·조깅·장거리·대회용을 분리하면 불필요한 카본화나 과한 쿠션 선택을 줄일 수 있습니다.",
+  },
+  {
+    title: "부상 신호",
+    description: "무릎, 정강이, 족저근막 통증은 신발만이 아니라 훈련량과 회복까지 함께 점검합니다.",
+  },
+];
+
+const faqItems = [
+  {
+    question: "러닝화 추천은 어떤 기준으로 보나요?",
+    answer: "발볼, 아치, 체중, 주간 거리, 러닝 목적, 통증 이력을 함께 봅니다. 브랜드 순위보다 내 발과 훈련 조건에 맞는지를 먼저 판단합니다.",
+  },
+  {
+    question: "무료 발 진단 결과만 믿어도 되나요?",
+    answer: "진단은 구매 전 후보를 좁히는 도구입니다. 실제 착화감, 매장 피팅, 통증 지속 여부는 별도로 확인해야 합니다.",
+  },
+  {
+    question: "광고나 제휴가 추천에 영향을 주나요?",
+    answer: "광고가 표시될 수 있지만, 추천 기준은 발 특성과 러닝 목적을 우선합니다. 상업적 링크가 들어가는 경우 독자가 알 수 있게 표시합니다.",
+  },
+];
+
 const Home = () => {
   usePageMeta({
     title: "러닝화 추천 | 무료 발 진단 | 런닝화매니아",
@@ -113,6 +148,17 @@ const Home = () => {
           "name": "런닝화매니아",
           "url": "https://runmania.kr",
           "logo": "https://runmania.kr/og-image.png",
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": faqItems.map((item) => ({
+            "@type": "Question",
+            "name": item.question,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": item.answer,
+            },
+          })),
         },
       ],
     };
@@ -162,13 +208,16 @@ const Home = () => {
           </h1>
 
           <p className="mx-auto mb-10 max-w-md text-base text-muted-foreground sm:text-lg">
-            발 진단 · 신발 리뷰 · 러닝 가이드까지.
+            발볼, 아치, 통증 신호, 러닝 목적을 함께 보고
             <br />
-            런닝화매니아에서 모두 확인하세요.
+            초보 러너가 피해야 할 신발까지 정리합니다.
           </p>
 
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link to="/tools/diagnosis">
+            <Link
+              to="/tools/diagnosis"
+              onClick={() => trackEvent("cta_clicked", { location: "home_hero", target: "diagnosis" })}
+            >
               <Button
                 size="lg"
                 className="group gap-2 rounded-xl bg-primary px-8 py-6 text-base font-semibold text-primary-foreground neon-border transition-all hover:neon-border-strong"
@@ -177,7 +226,10 @@ const Home = () => {
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Link to="/blog">
+            <Link
+              to="/blog"
+              onClick={() => trackEvent("cta_clicked", { location: "home_hero", target: "blog" })}
+            >
               <Button
                 size="lg"
                 variant="outline"
@@ -206,7 +258,10 @@ const Home = () => {
                 {...fadeUp}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
               >
-                <Link to={card.link}>
+                <Link
+                  to={card.link}
+                  onClick={() => trackEvent("tool_used", { location: "home_tools", tool: card.title })}
+                >
                   <div className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:card-glow">
                     <div className="mb-4 flex items-center justify-between">
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-secondary text-primary">
@@ -231,6 +286,33 @@ const Home = () => {
 
             {/* Upcoming tools placeholder */}
 
+          </div>
+        </div>
+      </section>
+
+      {/* Selection Guide */}
+      <section className="border-t border-border px-4 py-16">
+        <div className="mx-auto max-w-5xl">
+          <motion.div {...fadeUp} transition={{ duration: 0.5 }} className="mb-10 max-w-2xl">
+            <h2 className="mb-3 text-2xl font-bold">러닝화 선택 기준</h2>
+            <p className="text-sm leading-6 text-muted-foreground">
+              좋은 러닝화는 비싼 모델이 아니라 내 발에서 문제를 만들지 않는 모델입니다. 런닝화매니아는 신발 스펙보다 발 상태와 사용 목적을 먼저 분류합니다.
+            </p>
+          </motion.div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {selectionGuide.map((item, i) => (
+              <motion.article
+                key={item.title}
+                {...fadeUp}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+                className="rounded-lg border border-border bg-card p-5"
+              >
+                <CheckCircle2 className="mb-3 h-5 w-5 text-primary" />
+                <h3 className="mb-2 text-base font-bold">{item.title}</h3>
+                <p className="text-sm leading-6 text-muted-foreground">{item.description}</p>
+              </motion.article>
+            ))}
           </div>
         </div>
       </section>
@@ -338,7 +420,10 @@ const Home = () => {
             <p className="mb-6 text-sm text-muted-foreground">
               3분 진단으로 내 발에 맞는 신발을 찾고, 위험한 신발을 피하세요.
             </p>
-            <Link to="/tools/diagnosis">
+             <Link
+               to="/tools/diagnosis"
+               onClick={() => trackEvent("cta_clicked", { location: "home_bottom", target: "diagnosis" })}
+             >
               <Button className="gap-2 rounded-xl bg-primary px-8 py-5 text-primary-foreground neon-border">
                 <Shield className="h-4 w-4" />
                 무료 진단 받기
@@ -346,6 +431,34 @@ const Home = () => {
             </Link>
           </div>
         </motion.div>
+      </section>
+
+      {/* Trust & FAQ */}
+      <section className="border-t border-border px-4 py-16">
+        <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[0.85fr_1.15fr]">
+          <motion.div {...fadeUp} transition={{ duration: 0.5 }}>
+            <div className="mb-4 flex items-center gap-2 text-primary">
+              <Info className="h-5 w-5" />
+              <h2 className="text-xl font-bold">운영 기준</h2>
+            </div>
+            <p className="text-sm leading-7 text-muted-foreground">
+              이 사이트는 러닝화 구매 전 판단을 돕는 정보형 콘텐츠와 계산 도구를 제공합니다. 의료 진단을 대신하지 않으며, 통증이 지속되면 전문가 상담을 권합니다.
+            </p>
+            <p className="mt-4 text-sm leading-7 text-muted-foreground">
+              일부 페이지에는 광고가 표시될 수 있습니다. 광고 배치는 콘텐츠 읽기와 도구 사용을 방해하지 않는 범위로 제한합니다.
+            </p>
+          </motion.div>
+
+          <motion.div {...fadeUp} transition={{ duration: 0.5, delay: 0.1 }} className="space-y-4">
+            <h2 className="text-xl font-bold">자주 묻는 질문</h2>
+            {faqItems.map((item) => (
+              <article key={item.question} className="rounded-lg border border-border bg-card p-5">
+                <h3 className="mb-2 text-sm font-bold">{item.question}</h3>
+                <p className="text-sm leading-6 text-muted-foreground">{item.answer}</p>
+              </article>
+            ))}
+          </motion.div>
+        </div>
       </section>
 
       {/* Footer */}

@@ -4,10 +4,14 @@
  * 매 요청마다 새 클라이언트를 생성하는 방식(서버리스 환경 대응)이며,
  * ensureContentSchema()로 필요한 테이블/컬럼을 자동 생성한다.
  */
-import { createClient } from "@libsql/client/web";
+import {
+  createClient,
+  type InArgs,
+  type InStatement,
+  type ResultSet,
+} from "@libsql/client/web";
 
 type DbClient = ReturnType<typeof createClient>;
-type ExecuteArgs = Parameters<DbClient["execute"]>;
 type BatchArgs = Parameters<DbClient["batch"]>;
 
 // @libsql/client/web는 libsql:// 프로토콜을 지원하지 않으므로 https://로 변환
@@ -31,8 +35,17 @@ export function getDb() {
  * 프록시 클라이언트 — 매 호출마다 getDb()로 새 커넥션을 생성한다.
  * Vercel 서버리스 환경에서 커넥션 풀 없이 안전하게 동작하기 위한 패턴.
  */
+function executeDb(stmt: InStatement): Promise<ResultSet>;
+function executeDb(sql: string, args?: InArgs): Promise<ResultSet>;
+function executeDb(stmtOrSql: InStatement, args?: InArgs) {
+  if (typeof stmtOrSql === "string") {
+    return getDb().execute(stmtOrSql, args);
+  }
+  return getDb().execute(stmtOrSql);
+}
+
 export const tursoClient = {
-  execute: (...args: ExecuteArgs) => getDb().execute(...args),
+  execute: executeDb,
   batch: (...args: BatchArgs) => getDb().batch(...args),
 };
 
@@ -64,7 +77,7 @@ export async function ensureContentSchema() {
   await tursoClient.execute(`
     CREATE TABLE IF NOT EXISTS app_settings (
       id INTEGER PRIMARY KEY DEFAULT 1,
-      publish_interval_hours INTEGER NOT NULL DEFAULT 24,
+      publish_interval_hours INTEGER NOT NULL DEFAULT 5,
       auto_publish_enabled INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )

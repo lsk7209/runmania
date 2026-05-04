@@ -7,6 +7,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
 
 const BASE_URL = "https://runmania.kr";
+const SITE_LASTMOD = "2026-05-05";
 
 const STATIC_PAGES = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
@@ -37,6 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const staticEntries = STATIC_PAGES.map(
       (p) => `  <url>
     <loc>${BASE_URL}${p.path}</loc>
+    <lastmod>${SITE_LASTMOD}</lastmod>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`,

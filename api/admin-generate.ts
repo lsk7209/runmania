@@ -44,7 +44,10 @@ type NormalizedGenerationMeta = SeoGenerationMetaInput & {
   schemaType?: string;
   schemaJson?: Record<string, unknown>;
   qualityGate?: QualityGateResult;
+  lastPromptAt?: string;
 };
+
+type ContentType = SeoGenerationMetaInput["contentType"];
 
 type BlogPostRow = {
   id?: string | null;
@@ -140,7 +143,7 @@ export async function generateContentForPost(input: { postId: string; options?: 
       throw new GenerationError(404, "Post not found");
     }
 
-    const post = resultPost.rows[0] as BlogPostRow;
+    const post = resultPost.rows[0] as unknown as BlogPostRow;
     if (post.status === "published") {
       throw new GenerationError(
         409,
@@ -163,9 +166,13 @@ export async function generateContentForPost(input: { postId: string; options?: 
 
     generationLocked = true;
 
-    const existingMeta = tryParse(post.generation_meta) || {};
-    const generationMeta = normalizeGenerationMeta({ ...existingMeta, ...(options || {}) });
-    const contentType = post.content_type || generationMeta.contentType || "blog";
+    const parsedExistingMeta = tryParse(post.generation_meta);
+    const existingMeta = isRecord(parsedExistingMeta) ? parsedExistingMeta : {};
+    const generationMeta = normalizeGenerationMeta({
+      ...existingMeta,
+      ...(isRecord(options) ? options : {}),
+    });
+    const contentType = normalizeContentType(post.content_type || generationMeta.contentType);
     const originalTitle = String(post.title || "").trim();
     const slug = String(post.slug || "").trim();
     const internalLinkCandidates = await loadInternalLinkCandidates(postId);
@@ -650,6 +657,10 @@ function normalizeSearchIntent(value: unknown): SearchIntent {
   return "auto";
 }
 
+function normalizeContentType(value: unknown): ContentType {
+  return value === "review" || value === "utility" ? value : "blog";
+}
+
 function isQualityGate(value: unknown): value is QualityGateResult {
   if (!isRecord(value)) return false;
   return typeof value.passed === "boolean" && typeof value.score === "number";
@@ -674,7 +685,7 @@ async function loadInternalLinkCandidates(postId: string) {
 
   return result.rows
     .map((row) => {
-      const source = isRecord(row) ? row : {};
+      const source = isRecord(row) ? row : ({} as Record<string, unknown>);
       const parsedTags = tryParse(source.tags);
       return {
         slug: String(source.slug || "").trim(),

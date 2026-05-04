@@ -19,6 +19,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import usePageMeta from "@/hooks/usePageMeta";
+import { trackEvent } from "@/lib/analytics";
 import {
   Accordion,
   AccordionItem,
@@ -1120,6 +1121,24 @@ const BlogDetail = ({ slug }: { slug: string }) => {
         if (typeof data.count === "number") setViewCount(data.count);
       })
       .catch(() => {});
+  }, [post?.slug]);
+
+  useEffect(() => {
+    if (!post?.slug) return;
+    let tracked = false;
+    const onScroll = () => {
+      if (tracked) return;
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollable <= 0) return;
+      const progress = window.scrollY / scrollable;
+      if (progress >= 0.75) {
+        tracked = true;
+        trackEvent("content_read_complete", { slug: post.slug, content_type: "blog" });
+        window.removeEventListener("scroll", onScroll);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, [post?.slug]);
 
   useDocumentMeta(seoTitle, seoDescription);
