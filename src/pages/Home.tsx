@@ -154,10 +154,10 @@ const Home = () => {
   }, []);
 
   usePageMeta({
-    title: "러닝화 추천 | 무료 발 진단 | 런닝화매니아",
-    description: "러닝 초보 신발 추천, 무릎 통증 러닝화, 족저근막염 신발, 발볼 넓은 러닝화 추천. 3분 무료 발 진단으로 내 발에 맞는 러닝화를 찾으세요.",
+    title: "러닝화 추천 | 발 유형별 무료 진단 | 런닝화매니아",
+    description: "초보 러닝화 추천, 무릎 통증·족저근막염·발볼 넓은 러닝화 가이드. 3분 무료 발 진단으로 내 발 유형에 맞는 신발과 피해야 할 신발을 바로 확인하세요.",
     canonicalPath: "/",
-    keywords: "러닝화 추천, 러닝 초보 신발, 무릎 러닝화, 족저근막염 신발, 발볼 넓은 러닝화, 편평족 러닝화",
+    keywords: "러닝화 추천, 초보 러닝화, 입문 러닝화, 무릎 통증 러닝화, 족저근막염 신발, 발볼 넓은 러닝화, 편평족 러닝화, 발 진단",
   });
 
   useEffect(() => {
@@ -219,9 +219,9 @@ const Home = () => {
         />
 
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.35 }}
           className="relative z-10 mx-auto max-w-2xl text-center"
         >
           <div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-border bg-secondary px-4 py-1.5 text-xs text-muted-foreground">
@@ -235,11 +235,20 @@ const Home = () => {
             <span className="neon-text text-primary">데이터</span>로 찾아드립니다.
           </h1>
 
-          <p className="mx-auto mb-10 max-w-md text-base text-muted-foreground sm:text-lg">
+          <p className="mx-auto mb-8 max-w-md text-base text-muted-foreground sm:text-lg">
             발볼, 아치, 통증 신호, 러닝 목적을 함께 보고
             <br />
             초보 러너가 피해야 할 신발까지 정리합니다.
           </p>
+
+          {/* 신뢰 통계 */}
+          <div className="mx-auto mb-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="font-bold text-primary">30+</span> 러닝화 분석</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><span className="font-bold text-primary">6</span> 러너 유형</span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1"><span className="font-bold text-primary">3분</span> 무료 진단</span>
+          </div>
 
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
