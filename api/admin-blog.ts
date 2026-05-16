@@ -3,6 +3,30 @@ import { generateContentForPost } from "./admin-generate.js";
 import { ensureContentSchema, tursoClient } from "./db.js";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const BASE_URL = "https://www.runmania.kr";
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? "b1c3e5a7d9f2e4b6a8c0d2e4f6a8b0c1";
+const INDEXNOW_ENDPOINTS = [
+  "https://api.indexnow.org/indexnow",
+  "https://www.bing.com/indexnow",
+  "https://searchadvisor.naver.com/indexnow",
+];
+
+async function submitIndexNow(slug: string) {
+  if (process.env.NODE_ENV === "test") return;
+  const body = JSON.stringify({
+    host: "www.runmania.kr",
+    key: INDEXNOW_KEY,
+    keyLocation: `${BASE_URL}/${INDEXNOW_KEY}.txt`,
+    urlList: [`${BASE_URL}/blog/${slug}`],
+  });
+  await Promise.all(
+    INDEXNOW_ENDPOINTS.map((ep) =>
+      fetch(ep, { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8" }, body })
+        .then((r) => console.log(`[admin-blog] IndexNow ${ep}: ${r.status}`))
+        .catch((e) => console.warn(`[admin-blog] IndexNow ${ep} failed:`, e)),
+    ),
+  );
+}
 
 type ParsedPostRow = {
   content?: unknown;
@@ -208,12 +232,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
 
+        const slugResult = await tursoClient.execute({
+          sql: "SELECT slug FROM blog_posts WHERE id=?",
+          args: [data.id],
+        });
         await tursoClient.execute({
           sql: `UPDATE blog_posts
             SET status='published', published_at=CURRENT_TIMESTAMP, scheduled_at=NULL, updated_at=CURRENT_TIMESTAMP
             WHERE id=?`,
           args: [data.id],
         });
+        const publishedSlug = String(slugResult.rows[0]?.slug ?? "");
+        if (publishedSlug) {
+          submitIndexNow(publishedSlug).catch(() => {});
+        }
         return res.status(200).json({ success: true });
       }
 

@@ -1321,16 +1321,24 @@ const BlogDetail = ({ slug }: { slug: string }) => {
       datePublished: post.date,
       dateModified: post.dateModified || post.date,
       author: {
-        "@type": "Organization",
-        name: "런닝화매니아",
-        url: CANONICAL_ORIGIN,
+        "@type": "Person",
+        name: "런닝화매니아 에디터",
+        url: `${CANONICAL_ORIGIN}/about`,
+        worksFor: {
+          "@type": "Organization",
+          name: "런닝화매니아",
+          url: CANONICAL_ORIGIN,
+        },
       },
       publisher: {
         "@type": "Organization",
         name: "런닝화매니아",
+        url: CANONICAL_ORIGIN,
         logo: {
           "@type": "ImageObject",
-          url: `${CANONICAL_ORIGIN}/favicon.ico`,
+          url: `${CANONICAL_ORIGIN}/og-image.png`,
+          width: 1200,
+          height: 630,
         },
       },
       mainEntityOfPage: {

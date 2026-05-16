@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Footprints, ArrowRight, Activity, BookOpen, Star, Zap,
@@ -42,7 +42,15 @@ const toolCards = [
   },
 ];
 
-const blogPosts = [
+type HomeBlogPost = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  tags: string[];
+  readTime: string;
+};
+
+const FALLBACK_BLOG_POSTS: HomeBlogPost[] = [
   {
     slug: "best-running-shoes-2025",
     title: "2025 러닝화 추천 TOP 5: 용도별 최고의 선택",
@@ -125,6 +133,26 @@ const faqItems = [
 ];
 
 const Home = () => {
+  const [blogPosts, setBlogPosts] = useState<HomeBlogPost[]>(FALLBACK_BLOG_POSTS);
+
+  useEffect(() => {
+    fetch("/api/posts")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const recent = data.slice(0, 3).map((p: Record<string, unknown>) => ({
+            slug: String(p.slug ?? ""),
+            title: String(p.title ?? ""),
+            excerpt: String(p.excerpt ?? ""),
+            tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
+            readTime: String(p.read_time ?? "10분"),
+          }));
+          setBlogPosts(recent);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   usePageMeta({
     title: "러닝화 추천 | 무료 발 진단 | 런닝화매니아",
     description: "러닝 초보 신발 추천, 무릎 통증 러닝화, 족저근막염 신발, 발볼 넓은 러닝화 추천. 3분 무료 발 진단으로 내 발에 맞는 러닝화를 찾으세요.",
@@ -467,6 +495,11 @@ const Home = () => {
           <div className="mb-3 flex items-center justify-center gap-2 text-sm">
             <Footprints className="h-4 w-4 text-primary" />
             <span className="font-bold">런닝화매니아</span>
+          </div>
+          <div className="mb-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+            <Link to="/about" className="hover:text-primary transition-colors">소개</Link>
+            <Link to="/privacy" className="hover:text-primary transition-colors">개인정보처리방침</Link>
+            <Link to="/blog" className="hover:text-primary transition-colors">블로그</Link>
           </div>
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} 런닝화매니아. 러닝화 추천 · 발 진단 플랫폼.

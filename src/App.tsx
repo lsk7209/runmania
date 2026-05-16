@@ -20,6 +20,8 @@ const TrainingPaces = lazy(() => import("@/pages/TrainingPaces"));
 const WeightLossCalculator = lazy(() => import("@/pages/WeightLossCalculator"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const Admin = lazy(() => import("@/pages/Admin"));
+const About = lazy(() => import("@/pages/About"));
+const Privacy = lazy(() => import("@/pages/Privacy"));
 
 const queryClient = new QueryClient();
 
@@ -62,6 +64,8 @@ const App = () => (
               element={<WeightLossCalculator />}
             />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy" element={<Privacy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
