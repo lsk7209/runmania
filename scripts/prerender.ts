@@ -249,8 +249,46 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+function renderRouteShell(route: RouteConfig) {
+  const isHome = route.path === "/";
+  const homeIntro = isHome
+    ? `<p>Runmania is a running shoe guide and runner utility site. It offers a free foot diagnosis flow, running shoe review summaries, training pace calculators, race prediction tools, shoe size conversion, calorie estimates, and practical beginner running guides.</p>
+  <p>The home page is designed to expose the main editorial purpose, tool categories, contact path, privacy policy, and terms of use before the React application loads. Product and training information is educational reference content, not medical advice or a guarantee that a specific shoe will fit every runner.</p>
+  <p>Visitors should confirm shoe availability, prices, product specifications, return policies, and health-related decisions with the seller, manufacturer, or qualified professional before acting on the information.</p>`
+    : "";
+
+  return `<main class="prerender-shell">
+  <header>
+    <p>Runmania</p>
+    <h1>${escapeHtml(route.title)}</h1>
+    <p>${escapeHtml(route.description)}</p>
+  </header>
+  <section>
+    <h2>Page summary</h2>
+    ${homeIntro}
+    <p>${escapeHtml(route.description)}</p>
+  </section>
+  <nav aria-label="Site policy links">
+    <a href="/about/">About</a>
+    <a href="/contact/">Contact</a>
+    <a href="/privacy/">Privacy Policy</a>
+    <a href="/terms/">Terms of Use</a>
+  </nav>
+  <nav aria-label="Runner tools">
+    <a href="/tools/diagnosis/">Foot diagnosis</a>
+    <a href="/tools/pace-calculator/">Pace calculator</a>
+    <a href="/tools/training-paces/">Training paces</a>
+    <a href="/reviews/">Shoe reviews</a>
+    <a href="/blog/">Running guide blog</a>
+  </nav>
+</main>`;
+}
+
 function writeRouteHtml(baseHtml: string, route: RouteConfig) {
-  const html = injectMeta(baseHtml, route);
+  const html = injectMeta(baseHtml, route).replace(
+    '<div id="root"></div>',
+    `<div id="root">${renderRouteShell(route)}</div>`,
+  );
   const routePath = route.path === "/" ? "" : route.path;
   const dir = path.join(DIST, routePath);
   ensureDir(dir);
