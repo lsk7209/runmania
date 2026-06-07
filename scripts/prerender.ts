@@ -71,6 +71,37 @@ const ROUTES: RouteConfig[] = [
       "러닝 계산기, 달리기 칼로리, 마라톤 완주 예측, 훈련 페이스, 심박수 구간",
   },
   {
+    path: "/about",
+    title: "About Runmania | Running shoe guides and tools",
+    description:
+      "Runmania publishes running shoe guides, review summaries, free calculators, and practical information for runners.",
+    keywords:
+      "Runmania, running shoe guide, running shoe recommendation, running tools",
+  },
+  {
+    path: "/contact",
+    title: "Contact | Runmania",
+    description:
+      "Contact Runmania for content corrections, partnership inquiries, privacy requests, and running shoe recommendation feedback.",
+    keywords:
+      "Runmania contact, running shoe recommendation inquiry, contact@runmania.kr",
+  },
+  {
+    path: "/privacy",
+    title: "Privacy Policy | Runmania",
+    description:
+      "Runmania privacy policy explains analytics, advertising cookies, data use, third-party services, and contact details.",
+    keywords:
+      "Runmania privacy policy, Google Analytics, Google AdSense, privacy contact",
+  },
+  {
+    path: "/terms",
+    title: "Terms of Use | Runmania",
+    description:
+      "Runmania terms of use covering educational content, product information, advertising disclosure, and contact details.",
+    keywords: "Runmania terms, terms of use, advertising disclosure",
+  },
+  {
     path: "/tools/calorie-calculator",
     title: "달리기 칼로리 계산기 | 런닝화매니아",
     description:

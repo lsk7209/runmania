@@ -507,7 +507,9 @@ const Home = () => {
           </div>
           <div className="mb-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
             <Link to="/about" className="hover:text-primary transition-colors">소개</Link>
+            <Link to="/contact" className="hover:text-primary transition-colors">문의</Link>
             <Link to="/privacy" className="hover:text-primary transition-colors">개인정보처리방침</Link>
+            <Link to="/terms" className="hover:text-primary transition-colors">이용약관</Link>
             <Link to="/blog" className="hover:text-primary transition-colors">블로그</Link>
           </div>
           <p className="text-xs text-muted-foreground">
