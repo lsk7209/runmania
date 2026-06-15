@@ -42,7 +42,7 @@ import { mapDbPostToLocal } from "@/data/blogPostUtils";
 const BLOG_LIST_QUERY_KEY = ["blog-post-list"];
 const BLOG_POST_QUERY_KEY = "blog-post";
 const BLOG_CACHE_MS = 5 * 60 * 1000;
-const CANONICAL_ORIGIN = "https://www.runmania.kr";
+const CANONICAL_ORIGIN = "https://runmania.kr";
 
 const loadLocalPosts = async () => {
   const { LOCAL_POSTS } = await import("@/data/localBlogPosts");

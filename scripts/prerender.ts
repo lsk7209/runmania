@@ -10,7 +10,7 @@ import * as path from "path";
 import { createClient } from "@libsql/client";
 
 const DIST = path.resolve(process.cwd(), "dist");
-const BASE_URL = "https://www.runmania.kr";
+const BASE_URL = "https://runmania.kr";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 
 interface RouteConfig {

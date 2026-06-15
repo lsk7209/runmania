@@ -6,7 +6,7 @@
 export const SITE_PERSONA = {
   siteId: "runmania.kr",
   siteName: "런닝화매니아",
-  siteUrl: "https://www.runmania.kr",
+  siteUrl: "https://runmania.kr",
   locale: "ko_KR",
   niche: "running-shoes",
   adSensePubId: "ca-pub-3050601904412736",
@@ -26,7 +26,7 @@ export const SITE_PERSONA = {
       "특정 브랜드 편애 없이 데이터 기반 분석",
     ],
     expertise: ["러닝화 선택 기준", "발 유형 분석", "러닝 훈련 입문", "부상 예방 기초"],
-    authorUrl: "https://www.runmania.kr/about",
+    authorUrl: "https://runmania.kr/about",
   },
 
   /**

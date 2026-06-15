@@ -21,13 +21,13 @@ const About = () => {
       "@context": "https://schema.org",
       "@type": "AboutPage",
       "name": "런닝화매니아 소개",
-      "url": "https://www.runmania.kr/about",
+      "url": "https://runmania.kr/about",
       "description": "런닝화매니아는 한국 러너를 위한 러닝화 추천·리뷰·발 진단 전문 플랫폼입니다.",
       "publisher": {
         "@type": "Organization",
         "name": "런닝화매니아",
-        "url": "https://www.runmania.kr",
-        "logo": "https://www.runmania.kr/og-image.png",
+        "url": "https://runmania.kr",
+        "logo": "https://runmania.kr/og-image.png",
       },
     };
     const id = "about-jsonld";

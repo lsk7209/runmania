@@ -22,7 +22,7 @@ function sitemapPlugin(): Plugin {
 function indexNowPlugin(): Plugin {
   const INDEXNOW_KEY =
     process.env.INDEXNOW_KEY ?? "b1c3e5a7d9f2e4b6a8c0d2e4f6a8b0c1";
-  const BASE_URL = "https://www.runmania.kr";
+  const BASE_URL = "https://runmania.kr";
 
   return {
     name: "vite-plugin-indexnow",
@@ -43,7 +43,7 @@ function indexNowPlugin(): Plugin {
 
         // 1. IndexNow ping (Bing + Naver 직접 제출)
         const indexNowBody = {
-          host: "www.runmania.kr",
+          host: "runmania.kr",
           key: INDEXNOW_KEY,
           keyLocation: `${BASE_URL}/${INDEXNOW_KEY}.txt`,
           urlList,

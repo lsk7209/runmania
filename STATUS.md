@@ -18,7 +18,7 @@
 - WordPress 항목: 현재 Vite/Vercel 사이트라 플러그인·테마·댓글 작업은 패스
 - sitemap/RSS: 정적 파일 대신 Vercel API 동적 응답 사용
 - 자동 발행: 기본 간격 5시간
-- 대표 URL: `https://www.runmania.kr`
+- 대표 URL: `https://runmania.kr`
 
 ## 주의
 - 신규 글 45편 예약: 2026-07-19 13:00 ~ 2026-07-28 17:00 KST

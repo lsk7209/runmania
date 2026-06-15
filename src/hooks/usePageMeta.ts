@@ -9,7 +9,7 @@ interface PageMetaOptions {
   ogType?: string;
 }
 
-const BASE_URL = "https://www.runmania.kr";
+const BASE_URL = "https://runmania.kr";
 const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 
 const usePageMeta = ({ title, description, canonicalPath, keywords, ogImage, ogType }: PageMetaOptions) => {

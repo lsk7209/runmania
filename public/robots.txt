@@ -50,4 +50,4 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-Sitemap: https://www.runmania.kr/sitemap.xml
+Sitemap: https://runmania.kr/sitemap.xml

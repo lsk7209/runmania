@@ -12,7 +12,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { generateContentForPost } from "./admin-generate.js";
 import { ensureContentSchema, tursoClient } from "./db.js";
 
-const BASE_URL = "https://www.runmania.kr";
+const BASE_URL = "https://runmania.kr";
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? "b1c3e5a7d9f2e4b6a8c0d2e4f6a8b0c1";
 const INDEXNOW_ENDPOINTS = [
   "https://api.indexnow.org/indexnow",
@@ -181,7 +181,7 @@ async function submitIndexNowForSlug(slug: string) {
   if (process.env.NODE_ENV === "test") return;
 
   const body = JSON.stringify({
-    host: "www.runmania.kr",
+    host: "runmania.kr",
     key: INDEXNOW_KEY,
     keyLocation: `${BASE_URL}/${INDEXNOW_KEY}.txt`,
     urlList: [`${BASE_URL}/blog/${slug}`],

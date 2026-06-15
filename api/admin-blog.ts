@@ -3,7 +3,7 @@ import { generateContentForPost } from "./admin-generate.js";
 import { ensureContentSchema, tursoClient } from "./db.js";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-const BASE_URL = "https://www.runmania.kr";
+const BASE_URL = "https://runmania.kr";
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY ?? "b1c3e5a7d9f2e4b6a8c0d2e4f6a8b0c1";
 const INDEXNOW_ENDPOINTS = [
   "https://api.indexnow.org/indexnow",
@@ -14,7 +14,7 @@ const INDEXNOW_ENDPOINTS = [
 async function submitIndexNow(slug: string) {
   if (process.env.NODE_ENV === "test") return;
   const body = JSON.stringify({
-    host: "www.runmania.kr",
+    host: "runmania.kr",
     key: INDEXNOW_KEY,
     keyLocation: `${BASE_URL}/${INDEXNOW_KEY}.txt`,
     urlList: [`${BASE_URL}/blog/${slug}`],
@@ -60,6 +60,7 @@ type PostMutationValidation =
 
 type PublishWorkflowRow = {
   id: string;
+  slug?: string | null;
   workflow_status?: string | null;
   status?: string | null;
   generation_meta?: unknown;
@@ -198,7 +199,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       case "publish": {
         const result = await tursoClient.execute({
-          sql: "SELECT id, workflow_status, generation_meta FROM blog_posts WHERE id = ?",
+          sql: "SELECT id, slug, workflow_status, generation_meta FROM blog_posts WHERE id = ?",
           args: [data.id],
         });
 
@@ -232,17 +233,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
 
-        const slugResult = await tursoClient.execute({
-          sql: "SELECT slug FROM blog_posts WHERE id=?",
-          args: [data.id],
-        });
         await tursoClient.execute({
           sql: `UPDATE blog_posts
             SET status='published', published_at=CURRENT_TIMESTAMP, scheduled_at=NULL, updated_at=CURRENT_TIMESTAMP
             WHERE id=?`,
           args: [data.id],
         });
-        const publishedSlug = String(slugResult.rows[0]?.slug ?? "");
+        const publishedSlug = String(post.slug ?? "");
         if (publishedSlug) {
           submitIndexNow(publishedSlug).catch(() => {});
         }
