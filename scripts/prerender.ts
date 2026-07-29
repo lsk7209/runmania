@@ -321,8 +321,21 @@ function renderRouteShell(route: RouteConfig) {
 </main>`;
 }
 
+function isReaderDetailRoute(route: RouteConfig) {
+  return /^\/blog\/[^/]+$/.test(route.path);
+}
+
+function applyAdsenseRoutePolicy(html: string, route: RouteConfig) {
+  if (isReaderDetailRoute(route)) return html;
+
+  return html.replace(
+    /\s*<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-3050601904412736"\s+crossorigin="anonymous"\s*><\/script>/,
+    "",
+  );
+}
+
 function writeRouteHtml(baseHtml: string, route: RouteConfig) {
-  const html = injectMeta(baseHtml, route).replace(
+  const html = applyAdsenseRoutePolicy(injectMeta(baseHtml, route), route).replace(
     '<div id="root"></div>',
     `<div id="root">${renderRouteShell(route)}</div>`,
   );
