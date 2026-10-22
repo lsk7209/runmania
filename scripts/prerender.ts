@@ -8,7 +8,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { createClient } from "@libsql/client";
-import { isNoindexPost } from "../api/noindexPosts";
+import { isNoindexPost } from "../api/indexPolicy";
 
 const DIST = path.resolve(process.cwd(), "dist");
 const BASE_URL = "https://runmania.kr";

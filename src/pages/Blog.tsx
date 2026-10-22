@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -1442,6 +1442,13 @@ const BlogDetail = ({ slug }: { slug: string }) => {
       <div className="flex min-h-screen items-center justify-center pt-14">
         <p className="text-muted-foreground">로딩 중...</p>
       </div>
+    );
+  }
+
+  // 사이트 내 이동은 Vercel 301을 거치지 않으므로 대표글로 교체 이동
+  if (post?.redirectTo) {
+    return (
+      <Navigate to={`/blog/${encodeURIComponent(post.redirectTo)}`} replace />
     );
   }
 

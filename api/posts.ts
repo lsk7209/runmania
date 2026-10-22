@@ -1,6 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
-import { isNoindexPost } from "./noindexPosts.js";
+import {
+  getRedirectTarget,
+  isIndexablePost,
+  isNoindexPost,
+} from "./indexPolicy.js";
 import { sanitizeContent, sanitizeLinks } from "./contentSanitizer.js";
 
 type PostRow = Record<string, unknown>;
@@ -58,17 +62,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const slugs = await loadPublishedSlugs();
-      const exists = (candidate: string) => slugs.has(candidate);
+      const resolveSlug = (candidate: string) =>
+        slugs.has(candidate)
+          ? (getRedirectTarget(candidate) ?? candidate)
+          : null;
       const post = parsePostRow(row);
 
       return res.status(200).json({
         ...post,
-        content: sanitizeContent(post.content, exists),
+        content: sanitizeContent(post.content, resolveSlug),
         faq: post.faq.map((item) => ({
           ...item,
-          answer: sanitizeLinks(item.answer, exists),
+          answer: sanitizeLinks(item.answer, resolveSlug),
         })),
         noindex: isNoindexPost(row.slug),
+        redirect_to: getRedirectTarget(row.slug),
       });
     }
 
@@ -80,11 +88,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ORDER BY published_at DESC
     `);
 
-    // 검색 제외 글은 목록에서도 숨긴다 (URL 직접 접근은 유지)
+    // 검색 제외·리다이렉트 글은 목록에서 숨긴다 (URL 직접 접근은 유지)
     return res
       .status(200)
       .json(
-        result.rows.filter((row) => !isNoindexPost(row.slug)).map(parsePostRow),
+        result.rows
+          .filter((row) => isIndexablePost(row.slug))
+          .map(parsePostRow),
       );
   } catch (error) {
     console.error("Error fetching posts:", error);

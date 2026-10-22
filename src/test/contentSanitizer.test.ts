@@ -11,7 +11,11 @@ const SLUGS = new Set([
   "요족-러닝화-기준-쿠션만-보면-안-되는-이유",
   "running-in-rain-shoe-guide",
 ]);
-const exists = (slug: string) => SLUGS.has(slug);
+const REDIRECTS: Record<string, string> = {
+  "break-in-running-shoes": "running-shoe-break-in-guide",
+};
+const exists = (slug: string) =>
+  SLUGS.has(slug) || slug in REDIRECTS ? (REDIRECTS[slug] ?? slug) : null;
 
 describe("normalizeBlockMarkers (실제 발행 글의 깨진 패턴)", () => {
   it("닫는 태그가 없으면 문단 끝에 붙인다", () => {
@@ -98,6 +102,12 @@ describe("sanitizeLinks", () => {
       "글",
     );
     expect(sanitizeLinks("[글](/없는-글)", exists)).toBe("글");
+  });
+
+  it("통합된 글로 가는 링크는 대표글로 바로 연결한다", () => {
+    expect(
+      sanitizeLinks("[길들이기](/blog/break-in-running-shoes)", exists),
+    ).toBe("[길들이기](/blog/running-shoe-break-in-guide)");
   });
 
   it("정상 링크는 바꾸지 않는다", () => {

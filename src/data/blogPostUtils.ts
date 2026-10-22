@@ -40,6 +40,8 @@ export interface BlogPost {
   generationMeta?: BlogSeoSnapshot;
   /** 검색 노출 제외 글 (API가 판정) */
   noindex?: boolean;
+  /** 중복 글 통합 시 이동할 대표글 슬러그 (API가 판정) */
+  redirectTo?: string;
 }
 
 type DbBlogPost = {
@@ -57,6 +59,7 @@ type DbBlogPost = {
   faq?: unknown;
   generation_meta?: unknown;
   noindex?: boolean | null;
+  redirect_to?: string | null;
 };
 
 export const mapDbPostToLocal = (dbPost: DbBlogPost): BlogPost => {
@@ -79,6 +82,7 @@ export const mapDbPostToLocal = (dbPost: DbBlogPost): BlogPost => {
     faq: normalizeFaqItems(dbPost.faq),
     generationMeta: normalizeGenerationMeta(dbPost.generation_meta),
     noindex: dbPost.noindex === true,
+    redirectTo: dbPost.redirect_to || undefined,
   };
 };
 

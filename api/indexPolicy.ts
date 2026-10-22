@@ -1,10 +1,28 @@
 /**
- * @file noindexPosts.ts
- * 검색 노출에서 제외할 블로그 글 슬러그 목록.
- * 2026-10-22 발행 글 전수 감사(docs/content-audit-2026-10.md)에서
- * 키워드 조합형 템플릿 글로 판정된 200편. noindex + sitemap/RSS/목록 제외 후
- * Search Console 클릭 데이터를 확인해 삭제(410) 또는 301로 정리한다.
+ * @file indexPolicy.ts
+ * 블로그 글 색인 정책 (2026-10-22 전수 감사: docs/content-audit-2026-10.md).
+ * - NOINDEX_POST_SLUGS: 키워드 조합형 템플릿 글 200편. noindex + sitemap/RSS/목록 제외 후
+ *   Search Console 클릭 데이터를 확인해 삭제(410) 또는 301로 정리한다.
+ * - REDIRECTED_POSTS: 검색 의도가 같은 중복 글 → 대표글 301 (vercel.json redirects와 동일해야 함)
  */
+export const REDIRECTED_POSTS: Readonly<Record<string, string>> = {
+  "running-shoe-cleaning-maintenance-guide": "running-shoe-cleaning-care-guide",
+  "high-arch-running-shoes": "high-arch-foot-running-shoes-guide",
+  "shin-splints-running-shoes": "shin-splints-running-shoes-guide",
+  "break-in-running-shoes": "running-shoe-break-in-guide",
+  "rainy-day-running-waterproof-shoes-guide": "running-in-rain-shoe-guide",
+  "nike-asics-newbalance-brand-comparison-2025":
+    "running-shoe-brand-comparison-guide",
+  "marathon-sub5-training-plan-12weeks": "marathon-12week-training-plan-shoes",
+  "running-shoes-lifespan-replacement-guide":
+    "when-to-replace-running-shoes-guide",
+  "running-shoe-insole-top5-recommendation": "running-shoe-insole-guide",
+  "budget-running-shoes-under-100k-2025": "budget-running-shoes-guide-2026",
+  "nike-pegasus-41-review-2025": "nike-pegasus-41-review",
+  "post-run-stretching-complete-routine":
+    "running-post-run-recovery-routine-guide",
+};
+
 export const NOINDEX_POST_SLUGS: ReadonlySet<string> = new Set([
   "asics-stability-shoes-landing-knee-long-run",
   "lsd-러닝-준비-비교-보강운동-거리증가-페이스-차이",
@@ -210,4 +228,13 @@ export const NOINDEX_POST_SLUGS: ReadonlySet<string> = new Set([
 
 export function isNoindexPost(slug: unknown): boolean {
   return typeof slug === "string" && NOINDEX_POST_SLUGS.has(slug);
+}
+
+export function getRedirectTarget(slug: unknown): string | null {
+  return typeof slug === "string" ? (REDIRECTED_POSTS[slug] ?? null) : null;
+}
+
+/** sitemap·RSS·글 목록에 노출할 글인지 (noindex·리다이렉트 글 제외) */
+export function isIndexablePost(slug: unknown): boolean {
+  return !isNoindexPost(slug) && getRedirectTarget(slug) === null;
 }

@@ -44,36 +44,38 @@ function normalizeParagraph(paragraph: string): string[] {
   return before ? [before, block] : [block];
 }
 
+/** 슬러그 → 링크할 최종 슬러그 (없는 글이면 null, 리다이렉트 글이면 대표글) */
+export type SlugResolver = (slug: string) => string | null;
+
 /** 마크다운 링크를 실제 경로로 고치고, 고칠 수 없으면 링크 텍스트만 남긴다 */
-export function sanitizeLinks(
-  text: string,
-  slugExists: (slug: string) => boolean,
-): string {
+export function sanitizeLinks(text: string, resolveSlug: SlugResolver): string {
   return text.replace(MARKDOWN_LINK, (whole, label: string, href: string) => {
-    const resolved = resolveHref(href, slugExists);
+    const resolved = resolveHref(href, resolveSlug);
     if (resolved === null) return label;
     return resolved === href ? whole : `[${label}](${resolved})`;
   });
 }
 
-function resolveHref(
-  href: string,
-  slugExists: (slug: string) => boolean,
-): string | null {
+function resolveHref(href: string, resolveSlug: SlugResolver): string | null {
   if (href.includes("${")) return null;
 
   if (/^https?:\/\//.test(href)) {
     const url = safeUrl(href);
     if (!url) return null;
-    const slug = toSlug(url.pathname);
-    if (slug && slugExists(slug)) return `/blog/${slug}`;
+    const target = toBlogPath(url.pathname, resolveSlug);
+    if (target) return target;
     return DEAD_HOSTS.has(url.hostname.replace(/^www\./, "")) ? null : href;
   }
 
   const path = href.split("#")[0];
   if (STATIC_PREFIX.test(path)) return href;
+  return toBlogPath(path, resolveSlug);
+}
+
+function toBlogPath(path: string, resolveSlug: SlugResolver): string | null {
   const slug = toSlug(path);
-  return slug && slugExists(slug) ? `/blog/${slug}` : null;
+  const target = slug ? resolveSlug(slug) : null;
+  return target ? `/blog/${target}` : null;
 }
 
 function toSlug(path: string): string {
@@ -96,9 +98,9 @@ function safeUrl(href: string): URL | null {
 /** 본문 배열 전체 정리: 마커 → 링크 순 */
 export function sanitizeContent(
   content: string[],
-  slugExists: (slug: string) => boolean,
+  resolveSlug: SlugResolver,
 ): string[] {
   return normalizeBlockMarkers(content).map((p) =>
-    sanitizeLinks(p, slugExists),
+    sanitizeLinks(p, resolveSlug),
   );
 }

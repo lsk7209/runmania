@@ -28,7 +28,10 @@ function createRes() {
 const ROW = {
   slug: "running-in-rain-shoe-guide",
   title: "비 오는 날 러닝화",
-  content: JSON.stringify(["[TIP]팁 제목", "[링크](/break-in-running-shoes)"]),
+  content: JSON.stringify([
+    "[TIP]팁 제목",
+    "[링크](/running-shoe-break-in-guide)",
+  ]),
   faq: "[]",
   tags: "[]",
   related_slugs: "[]",
@@ -46,7 +49,7 @@ describe("공개 단건 글 API", () => {
     mocks.dbExecute
       .mockResolvedValueOnce({ rows: [ROW] })
       .mockResolvedValueOnce({
-        rows: [{ slug: ROW.slug }, { slug: "break-in-running-shoes" }],
+        rows: [{ slug: ROW.slug }, { slug: "running-shoe-break-in-guide" }],
       });
   });
 
@@ -68,7 +71,7 @@ describe("공개 단건 글 API", () => {
     });
     expect(res.body?.content).toEqual([
       "[TIP]팁 제목[/TIP]",
-      "[링크](/blog/break-in-running-shoes)",
+      "[링크](/blog/running-shoe-break-in-guide)",
     ]);
   });
 });

@@ -5,7 +5,7 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
-import { isNoindexPost } from "./noindexPosts.js";
+import { isIndexablePost } from "./indexPolicy.js";
 
 const BASE_URL = "https://runmania.kr";
 const FEED_ITEM_LIMIT = 50;
@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     const items = result.rows
-      .filter((row) => !isNoindexPost(row.slug))
+      .filter((row) => isIndexablePost(row.slug))
       .slice(0, FEED_ITEM_LIMIT)
       .map((row) => {
         const pubDate = row.published_at
