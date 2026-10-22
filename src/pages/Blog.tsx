@@ -605,7 +605,7 @@ const parseMarkdownTable = (raw: string) => {
               <TableRow key={i}>
                 {row.map((cell, j) => (
                   <TableCell key={j} className="text-xs">
-                    {cell}
+                    {renderTextWithLinks(cell)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -629,7 +629,7 @@ const parseTable = (raw: string) => {
           <TableRow className="bg-secondary/50">
             {headers.map((h, i) => (
               <TableHead key={i} className="text-xs font-bold text-foreground">
-                {h.trim()}
+                {renderTextWithLinks(h.trim())}
               </TableHead>
             ))}
           </TableRow>
@@ -639,7 +639,7 @@ const parseTable = (raw: string) => {
             <TableRow key={i}>
               {row.map((cell, j) => (
                 <TableCell key={j} className="text-xs">
-                  {cell.trim()}
+                  {renderTextWithLinks(cell.trim())}
                 </TableCell>
               ))}
             </TableRow>
@@ -696,7 +696,7 @@ const parseChecklist = (raw: string) => {
         <div key={i} className="flex items-start gap-2.5">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <span className="text-sm text-secondary-foreground">
-            {item.trim()}
+            {renderTextWithLinks(item.trim())}
           </span>
         </div>
       ))}
@@ -729,13 +729,15 @@ const parseInfoBox = (raw: string) => {
     <div className="my-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
       <div className="mb-2 flex items-center gap-2">
         <Info className="h-4 w-4 shrink-0 text-blue-400" />
-        <span className="text-sm font-bold text-foreground">{title}</span>
+        <span className="text-sm font-bold text-foreground">
+          {renderTextWithLinks(title)}
+        </span>
       </div>
       {bodyParts.length > 0 && (
         <div className="ml-6 space-y-1">
           {bodyParts.map((line, i) => (
             <p key={i} className="text-sm text-secondary-foreground">
-              {line}
+              {renderTextWithLinks(line)}
             </p>
           ))}
         </div>
@@ -750,13 +752,15 @@ const parseWarning = (raw: string) => {
     <div className="my-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
       <div className="mb-2 flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
-        <span className="text-sm font-bold text-foreground">{title}</span>
+        <span className="text-sm font-bold text-foreground">
+          {renderTextWithLinks(title)}
+        </span>
       </div>
       {bodyParts.length > 0 && (
         <div className="ml-6 space-y-1">
           {bodyParts.map((line, i) => (
             <p key={i} className="text-sm text-secondary-foreground">
-              {line}
+              {renderTextWithLinks(line)}
             </p>
           ))}
         </div>
@@ -771,13 +775,15 @@ const parseTip = (raw: string) => {
     <div className="my-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="mb-2 flex items-center gap-2">
         <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
-        <span className="text-sm font-bold text-foreground">{title}</span>
+        <span className="text-sm font-bold text-foreground">
+          {renderTextWithLinks(title)}
+        </span>
       </div>
       {bodyParts.length > 0 && (
         <div className="ml-6 space-y-1">
           {bodyParts.map((line, i) => (
             <p key={i} className="text-sm text-secondary-foreground">
-              {line}
+              {renderTextWithLinks(line)}
             </p>
           ))}
         </div>
@@ -1010,7 +1016,7 @@ const renderBodyLines = (
                 <TableRow key={i}>
                   {row.map((cell, j) => (
                     <TableCell key={j} className="text-xs">
-                      {cell}
+                      {renderTextWithLinks(cell)}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -1560,7 +1566,7 @@ const BlogDetail = ({ slug }: { slug: string }) => {
                       {item.question}
                     </AccordionTrigger>
                     <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                      {item.answer}
+                      {renderTextWithLinks(item.answer)}
                     </AccordionContent>
                   </AccordionItem>
                 ))}

@@ -1,8 +1,26 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
 import { isNoindexPost } from "./noindexPosts.js";
+import { sanitizeContent, sanitizeLinks } from "./contentSanitizer.js";
 
 type PostRow = Record<string, unknown>;
+
+const SLUG_CACHE_MS = 5 * 60 * 1000;
+let slugCache: { slugs: Set<string>; loadedAt: number } | null = null;
+
+/** 링크 검증용 발행 글 슬러그 목록 (인스턴스 내 캐시) */
+async function loadPublishedSlugs(): Promise<Set<string>> {
+  if (slugCache && Date.now() - slugCache.loadedAt < SLUG_CACHE_MS) {
+    return slugCache.slugs;
+  }
+  const result = await tursoClient.execute(`
+    SELECT slug FROM blog_posts
+    WHERE status = 'published' AND workflow_status = 'approved'
+  `);
+  const slugs = new Set(result.rows.map((row) => String(row.slug)));
+  slugCache = { slugs, loadedAt: Date.now() };
+  return slugs;
+}
 
 type FaqItem = {
   question: string;
@@ -36,9 +54,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ error: "Post not found" });
       }
 
-      return res
-        .status(200)
-        .json({ ...parsePostRow(row), noindex: isNoindexPost(row.slug) });
+      const slugs = await loadPublishedSlugs();
+      const exists = (candidate: string) => slugs.has(candidate);
+      const post = parsePostRow(row);
+
+      return res.status(200).json({
+        ...post,
+        content: sanitizeContent(post.content, exists),
+        faq: post.faq.map((item) => ({
+          ...item,
+          answer: sanitizeLinks(item.answer, exists),
+        })),
+        noindex: isNoindexPost(row.slug),
+      });
     }
 
     const result = await tursoClient.execute(`
