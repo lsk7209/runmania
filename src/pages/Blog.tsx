@@ -19,6 +19,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import usePageMeta from "@/hooks/usePageMeta";
+import HealthNotice from "@/components/HealthNotice";
 import { trackEvent } from "@/lib/analytics";
 import {
   Accordion,
@@ -38,6 +39,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import type { BlogPost } from "@/data/blogPostUtils";
 import { mapDbPostToLocal } from "@/data/blogPostUtils";
+import { ILLUSTRATION_CAPTION, isShoeIllustration } from "@/data/shoeImages";
 
 const BLOG_LIST_QUERY_KEY = ["blog-post-list"];
 const BLOG_POST_QUERY_KEY = "blog-post";
@@ -1496,13 +1498,20 @@ const BlogDetail = ({ slug }: { slug: string }) => {
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Hero Image */}
-          <div className="mb-6 flex justify-center rounded-2xl bg-secondary/30 p-6">
-            <img
-              src={post.heroImage}
-              alt={post.title}
-              className="h-40 object-contain sm:h-52"
-            />
-          </div>
+          <figure className="mb-6">
+            <div className="flex justify-center rounded-2xl bg-secondary/30 p-6">
+              <img
+                src={post.heroImage}
+                alt={post.title}
+                className="h-40 object-contain sm:h-52"
+              />
+            </div>
+            {isShoeIllustration(post.heroImage) && (
+              <figcaption className="mt-2 text-center text-xs text-muted-foreground">
+                {ILLUSTRATION_CAPTION}
+              </figcaption>
+            )}
+          </figure>
 
           <div className="mb-6 flex items-center gap-3 text-xs text-muted-foreground">
             <span>{post.date}</span>
@@ -1529,6 +1538,7 @@ const BlogDetail = ({ slug }: { slug: string }) => {
             ))}
           </div>
 
+          {post.healthTopic && <HealthNotice />}
           <TableOfContents content={post.content} />
 
           <div className="prose-custom space-y-4">

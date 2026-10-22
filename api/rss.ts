@@ -6,6 +6,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
 import { isIndexablePost } from "./indexPolicy.js";
+import { softenMetaText } from "./metaText.js";
 
 const BASE_URL = "https://runmania.kr";
 const FEED_ITEM_LIMIT = 50;
@@ -28,11 +29,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const pubDate = row.published_at
           ? new Date(String(row.published_at)).toUTCString()
           : new Date().toUTCString();
-        const title = String(row.title ?? "")
+        const title = softenMetaText(String(row.title ?? ""))
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
-        const excerpt = String(row.excerpt ?? "")
+        const excerpt = softenMetaText(String(row.excerpt ?? ""))
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");

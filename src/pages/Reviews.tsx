@@ -16,7 +16,11 @@ import {
   UserX,
 } from "lucide-react";
 import { SHOES_DB, type Shoe } from "@/data/shoesDb";
-import { getShoeImage } from "@/data/shoeImages";
+import {
+  ILLUSTRATION_CAPTION,
+  getShoeImage,
+  illustrationAlt,
+} from "@/data/shoeImages";
 import { reviewData } from "@/data/reviewContent";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -228,7 +232,7 @@ const CompareView = ({
                 <div className="h-40 overflow-hidden bg-secondary">
                   <img
                     src={img}
-                    alt={shoe.name}
+                    alt={illustrationAlt(shoe.name)}
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -462,7 +466,7 @@ const ReviewList = ({
                   <div className="h-36 overflow-hidden bg-secondary">
                     <img
                       src={img}
-                      alt={`${shoe.name} ${shoe.brand} 러닝화 제품 사진`}
+                      alt={illustrationAlt(shoe.name)}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
                   </div>
@@ -612,13 +616,18 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
         animate={{ opacity: 1, y: 0 }}
       >
         {img && (
-          <div className="mb-6 overflow-hidden rounded-2xl border border-border">
-            <img
-              src={img}
-              alt={`${shoe.name} ${shoe.brand} 러닝화 상세 리뷰 사진`}
-              className="w-full object-cover"
-            />
-          </div>
+          <figure className="mb-6">
+            <div className="overflow-hidden rounded-2xl border border-border">
+              <img
+                src={img}
+                alt={illustrationAlt(shoe.name)}
+                className="w-full object-cover"
+              />
+            </div>
+            <figcaption className="mt-2 text-center text-xs text-muted-foreground">
+              {ILLUSTRATION_CAPTION}
+            </figcaption>
+          </figure>
         )}
 
         <div className="mb-2 flex items-center gap-3">
@@ -642,8 +651,9 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
           <div className="mb-8">
             <h2 className="mb-4 text-lg font-bold">📝 상세 리뷰</h2>
             <p className="mb-4 rounded-lg border border-border bg-secondary/40 p-3 text-xs leading-5 text-muted-foreground">
-              이 리뷰는 제조사 공식 사양, 공개된 제품 정보, 러너 후기를 종합·정리한 에디터팀의 의견이며
-              에디터가 직접 장기 테스트한 결과가 아닙니다. 평점은 편집부 종합 의견이고 이용자 평점이 아닙니다.
+              이 리뷰는 제조사 공식 사양, 공개된 제품 정보, 러너 후기를
+              종합·정리한 에디터팀의 의견이며 에디터가 직접 장기 테스트한 결과가
+              아닙니다. 평점은 편집부 종합 의견이고 이용자 평점이 아닙니다.
               가격·재고·사양은 구매 전 판매처에서 다시 확인하세요.
             </p>
             {review.detailedReview.split("\n\n").map((para, i) => (

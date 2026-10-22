@@ -9,6 +9,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { createClient } from "@libsql/client";
 import { isNoindexPost } from "../api/indexPolicy";
+import { softenMetaText } from "../api/metaText";
 
 const DIST = path.resolve(process.cwd(), "dist");
 const BASE_URL = "https://runmania.kr";
@@ -378,17 +379,18 @@ function normalizeFaq(value: unknown) {
 
 function normalizeBlogRoute(row: DbPostRow): RouteConfig | null {
   const slug = String(row.slug ?? "").trim();
-  const title = String(row.title ?? "").trim();
+  const title = softenMetaText(String(row.title ?? "").trim());
   if (!slug || !title) return null;
 
   const generationMeta = tryParseJson(row.generation_meta) as Record<
     string,
     unknown
   > | null;
-  const description =
+  const description = softenMetaText(
     String(generationMeta?.metaDescription ?? "").trim() ||
-    String(row.excerpt ?? "").trim() ||
-    `${title}에 대한 러닝화 선택 기준과 실전 체크포인트를 정리했습니다.`;
+      String(row.excerpt ?? "").trim() ||
+      `${title}에 대한 러닝화 선택 기준과 실전 체크포인트를 정리했습니다.`,
+  );
   const tags = normalizeStringArray(row.tags);
   const canonical = `${BASE_URL}/blog/${slug}`;
   const publishedAt = String(row.published_at ?? "").trim();
@@ -438,7 +440,7 @@ function normalizeBlogRoute(row: DbPostRow): RouteConfig | null {
   return {
     path: `/blog/${slug}`,
     title:
-      String(generationMeta?.metaTitle ?? "").trim() ||
+      softenMetaText(String(generationMeta?.metaTitle ?? "").trim()) ||
       `${title} | 런닝화매니아`,
     description,
     keywords: tags.join(", "),

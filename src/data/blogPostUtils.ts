@@ -42,6 +42,8 @@ export interface BlogPost {
   noindex?: boolean;
   /** 중복 글 통합 시 이동할 대표글 슬러그 (API가 판정) */
   redirectTo?: string;
+  /** 통증·부상 등 건강 주제 글 (API가 판정) */
+  healthTopic?: boolean;
 }
 
 type DbBlogPost = {
@@ -60,6 +62,7 @@ type DbBlogPost = {
   generation_meta?: unknown;
   noindex?: boolean | null;
   redirect_to?: string | null;
+  health_topic?: boolean | null;
 };
 
 export const mapDbPostToLocal = (dbPost: DbBlogPost): BlogPost => {
@@ -83,6 +86,7 @@ export const mapDbPostToLocal = (dbPost: DbBlogPost): BlogPost => {
     generationMeta: normalizeGenerationMeta(dbPost.generation_meta),
     noindex: dbPost.noindex === true,
     redirectTo: dbPost.redirect_to || undefined,
+    healthTopic: dbPost.health_topic === true,
   };
 };
 

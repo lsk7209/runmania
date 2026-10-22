@@ -6,6 +6,8 @@ import {
   isNoindexPost,
 } from "./indexPolicy.js";
 import { sanitizeContent, sanitizeLinks } from "./contentSanitizer.js";
+import { isHealthTopic } from "./healthTopic.js";
+import { softenMetaValue } from "./metaText.js";
 
 type PostRow = Record<string, unknown>;
 
@@ -77,6 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })),
         noindex: isNoindexPost(row.slug),
         redirect_to: getRedirectTarget(row.slug),
+        health_topic: isHealthTopic(row.title),
       });
     }
 
@@ -105,6 +108,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 function parsePostRow(row: PostRow) {
   return {
     ...row,
+    title: softenMetaValue(row.title),
+    excerpt: softenMetaValue(row.excerpt),
     content: parseStringArray(row.content),
     tags: parseStringArray(row.tags),
     related_slugs: parseStringArray(row.related_slugs),
@@ -120,7 +125,11 @@ function pickPublicSeoMeta(meta: unknown) {
     string,
     unknown
   >;
-  return { metaTitle, metaDescription, schemaJson };
+  return {
+    metaTitle: softenMetaValue(metaTitle),
+    metaDescription: softenMetaValue(metaDescription),
+    schemaJson,
+  };
 }
 
 function parseStringArray(value: unknown) {
