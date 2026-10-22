@@ -76,34 +76,31 @@ const ROUTES: RouteConfig[] = [
   },
   {
     path: "/about",
-    title: "About Runmania | Running shoe guides and tools",
+    title: "런닝화매니아 소개 | 러닝화 추천·발 진단 플랫폼",
     description:
-      "Runmania publishes running shoe guides, review summaries, free calculators, and practical information for runners.",
-    keywords:
-      "Runmania, running shoe guide, running shoe recommendation, running tools",
+      "런닝화매니아는 한국 러너를 위한 러닝화 추천, 무료 발 진단, 러닝화 리뷰 전문 플랫폼입니다. 발볼·아치·통증 신호를 기반으로 객관적인 신발 추천 정보를 제공합니다.",
+    keywords: "런닝화매니아 소개, 러닝화 추천, 발 진단, 러닝화 리뷰",
   },
   {
     path: "/contact",
-    title: "Contact | Runmania",
+    title: "문의하기 | 런닝화매니아",
     description:
-      "Contact Runmania for content corrections, partnership inquiries, privacy requests, and running shoe recommendation feedback.",
-    keywords:
-      "Runmania contact, running shoe recommendation inquiry, contact@runmania.kr",
+      "런닝화매니아에 콘텐츠 오류 제보, 제휴 문의, 개인정보 관련 요청, 러닝화 추천 피드백을 보내실 수 있습니다.",
+    keywords: "런닝화매니아 문의, 러닝화 추천 문의, contact@runmania.kr",
   },
   {
     path: "/privacy",
-    title: "Privacy Policy | Runmania",
+    title: "개인정보처리방침 | 런닝화매니아",
     description:
-      "Runmania privacy policy explains analytics, advertising cookies, data use, third-party services, and contact details.",
-    keywords:
-      "Runmania privacy policy, Google Analytics, Google AdSense, privacy contact",
+      "런닝화매니아의 개인정보처리방침입니다. 수집 정보, 이용 목적, 제3자 제공, 쿠키 정책 등을 안내합니다.",
+    keywords: "런닝화매니아 개인정보처리방침, 쿠키 정책, 광고 쿠키",
   },
   {
     path: "/terms",
-    title: "Terms of Use | Runmania",
+    title: "이용약관 | 런닝화매니아",
     description:
-      "Runmania terms of use covering educational content, product information, advertising disclosure, and contact details.",
-    keywords: "Runmania terms, terms of use, advertising disclosure",
+      "런닝화매니아 이용약관: 교육 목적의 콘텐츠, 제품 정보, 광고·제휴 고지, AI 활용 고지, 문의처를 안내합니다.",
+    keywords: "런닝화매니아 이용약관, 광고 고지, 제휴 링크",
   },
   {
     path: "/tools/calorie-calculator",
