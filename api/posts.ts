@@ -105,9 +105,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+/** 공개 응답에 포함할 컬럼 (SQL 변경과 무관하게 내부 필드가 새지 않도록 코드에서도 고정) */
+const PUBLIC_FIELDS = [
+  "slug",
+  "read_time",
+  "hero_image",
+  "published_at",
+  "created_at",
+  "updated_at",
+] as const;
+
 function parsePostRow(row: PostRow) {
+  const base = Object.fromEntries(
+    PUBLIC_FIELDS.filter((key) => key in row).map((key) => [key, row[key]]),
+  );
   return {
-    ...row,
+    ...base,
     title: softenMetaValue(row.title),
     excerpt: softenMetaValue(row.excerpt),
     content: parseStringArray(row.content),

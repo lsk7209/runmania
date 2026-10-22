@@ -75,3 +75,35 @@ describe("공개 단건 글 API", () => {
     ]);
   });
 });
+
+describe("공개 글 응답 필드 허용 목록", () => {
+  it("DB 행에 내부 컬럼이 있어도 응답에 포함하지 않는다", async () => {
+    mocks.dbExecute.mockReset();
+    mocks.dbExecute
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            ...ROW,
+            status: "published",
+            workflow_status: "approved",
+            scheduled_at: "2026-01-01",
+            generation_count: 3,
+            generation_in_progress: 0,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ slug: ROW.slug }] });
+    const { default: handler } = await import("../../api/posts");
+    const res = createRes();
+    await handler(
+      { method: "GET", query: { slug: ROW.slug } } as unknown as VercelRequest,
+      res as unknown as VercelResponse,
+    );
+    expect(Object.keys(res.body ?? {})).not.toEqual(
+      expect.arrayContaining(["workflow_status"]),
+    );
+    for (const key of ["status", "scheduled_at", "generation_count", "generation_in_progress"]) {
+      expect(res.body).not.toHaveProperty(key);
+    }
+  });
+});
