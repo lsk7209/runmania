@@ -156,7 +156,11 @@ function injectMeta(html: string, route: RouteConfig): string {
   const canonical = `${BASE_URL}${route.path === "/" ? "" : route.path}`;
   const jsonLd = route.jsonLd ?? buildJsonLd(route, canonical);
 
-  return html
+  const baseWithCanonical = /<link rel="canonical"[^>]*>/.test(html)
+    ? html
+    : html.replace("</head>", '    <link rel="canonical" href="" />\n</head>');
+
+  return baseWithCanonical
     .replace(
       /<title>[^<]*<\/title>/,
       `<title>${escapeHtml(route.title)}</title>`,
@@ -249,74 +253,24 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+/**
+ * JS 실행 전 초기 HTML에 들어가는 최소 셸.
+ * 실제 화면(React)과 같은 정보만 담는다: 제목, 요약, 주요 링크.
+ * (크롤러 전용 보일러플레이트 텍스트는 클로킹으로 오해받을 수 있어 넣지 않는다.)
+ */
 function renderRouteShell(route: RouteConfig) {
-  const routeFocus =
-    route.path === "/tools/diagnosis"
-      ? "This diagnosis page explains how runners can prepare the seven-question foot and training survey, what the result means, and why the recommendation should be checked against fit, return policy, and personal comfort before buying shoes."
-      : route.path === "/tools/pace-calculator"
-        ? "This pace calculator page explains how to compare goal time, distance, and training pace without treating the result as a coaching prescription."
-        : route.path === "/tools/training-paces"
-          ? "This training paces page explains easy, tempo, interval, and long-run pace ranges so runners can compare effort zones before planning a week."
-          : route.path === "/tools"
-            ? "This tools hub groups calculators and shoe-selection utilities so visitors can move from diagnosis to pace, size, and training references without losing context."
-            : route.path === "/reviews"
-              ? "This review page summarizes shoe categories, fit warnings, and comparison criteria instead of promising one universal best running shoe."
-              : route.path === "/blog"
-                ? "This blog index helps readers find practical running shoe guides, beginner training notes, and injury-prevention context from the editorial archive."
-                : route.path === "/about"
-                  ? "This about page describes the editorial scope, limitations, correction process, and reader-first purpose of Runmania."
-                  : route.path === "/contact"
-                    ? "This contact page gives readers a direct path for corrections, privacy requests, partnership questions, and product information feedback."
-                    : route.path === "/privacy"
-                      ? "This privacy page explains analytics, advertising cookies, third-party services, and contact rights in plain language."
-                      : route.path === "/terms"
-                        ? "This terms page explains that Runmania is educational content, not medical care, retail fulfillment, or a guarantee of product availability."
-                        : "This page is part of Runmania's running shoe guide system and connects shoe choice, training context, and responsible reader decision-making.";
-
-  const routeDetail = `
-    <p>${escapeHtml(routeFocus)}</p>
-    <p>Runmania is built for Korean runners who need a practical starting point before they choose running shoes or use a running calculator. The site looks at foot width, arch type, pronation risk, weekly distance, running purpose, body weight, discomfort signals, and training intensity. Those factors matter because the most expensive shoe is not always the safest or most comfortable option for a real runner. A beginner who walks and jogs three times a week may need a very different shoe from a marathon runner, a wide-foot runner, or a runner who already feels knee, ankle, or plantar fascia discomfort.</p>
-    <p>The editorial approach is conservative. Recommendations explain why a model category may fit a situation, what tradeoffs to check, and when a reader should slow down and ask a professional. The site does not diagnose injuries, does not replace a doctor, and does not guarantee that any shoe will remove pain. When pain persists, when swelling appears, or when a runner has a medical history, the safer path is to consult a qualified professional before increasing mileage or buying equipment based only on an online guide.</p>
-    <p>For shoe-selection content, readers should compare fit in the afternoon, leave enough toe room for long runs, test heel lockdown, check midfoot pressure, and confirm whether the retailer allows returns after indoor try-on. Runners with wide feet should check width labels such as D, 2E, and 4E instead of relying only on brand reputation. Runners with flat feet or overpronation signals should compare stability features, but they should also avoid assuming that every stability shoe is automatically better. Comfort, gait, terrain, pace, and training load all interact.</p>
-    <p>For calculator pages, the numbers are reference estimates. Pace, calorie, heart-rate, race prediction, and training-zone outputs can help organize a plan, but they cannot know fatigue, weather, illness, sleep, nutrition, or injury status. A calculator result should be used as a comparison point, not as a fixed order. If a result feels too hard or causes pain, the correct action is to reduce effort and reassess.</p>
-    <p>Runmania keeps core trust pages visible for AdSense and search review. Readers can review the about page, contact page, privacy policy, and terms of use from this document before the JavaScript application loads. The same route also links to the diagnosis tool, pace calculator, training pace calculator, review archive, and blog index so crawlers and users can understand the site's structure from plain HTML. This reduces thin-page risk and makes the purpose of each page clear even on slow connections or script-limited crawlers.</p>
-    <p>Advertising may appear through Google AdSense Auto Ads. Advertising does not change the editorial caution on shoe choice, training load, health claims, or product availability. If affiliate or commercial references are added in the future, they should be disclosed clearly near the related content. Readers should still verify current prices, sizes, release versions, and seller policies because product information can change faster than an editorial guide.</p>
-    <p>Recommended next steps for visitors are simple. First, read the page summary and decide whether the route matches the question. Second, use the foot diagnosis if the question is about shoe category. Third, use the pace or training tools only as planning references. Fourth, read supporting blog and review pages for context. Fifth, contact the site when a correction is needed. This route-level guidance is intentionally visible in server-generated HTML so search engines, AdSense reviewers, and accessibility tools can evaluate the page without waiting for the client app.</p>
-    <p>The same standard applies across every public route. Each page should have a clear title, useful description, canonical URL, readable headings, internal navigation, policy links, and enough body context to stand on its own. A visitor who lands directly on a calculator or diagnosis route should still understand who operates the site, what the page can and cannot do, where to find related guides, and how to request a correction. That structure is important for search quality, AdSense review, and real users who arrive from mobile search results.</p>`;
-
   return `<main class="prerender-shell">
-  <header>
-    <p>Runmania</p>
-    <h1>${escapeHtml(route.title)}</h1>
-    <p>${escapeHtml(route.description)}</p>
-  </header>
-  <section>
-    <h2>Page summary</h2>
-    <p>${escapeHtml(route.description)}</p>
-    ${routeDetail}
-  </section>
-  <section>
-    <h2>Editorial checklist</h2>
-    <ul>
-      <li>Use the page as educational reference content, not as a medical diagnosis.</li>
-      <li>Confirm shoe size, width, return policy, and current product specifications before purchase.</li>
-      <li>Stop increasing training load when pain, swelling, numbness, or unusual fatigue appears.</li>
-      <li>Use internal guides to compare diagnosis, reviews, pace, training zones, and size conversion.</li>
-      <li>Send corrections through the contact page when a model, price, or policy reference is outdated.</li>
-    </ul>
-  </section>
-  <nav aria-label="Site policy links">
-    <a href="/about/">About</a>
-    <a href="/contact/">Contact</a>
-    <a href="/privacy/">Privacy Policy</a>
-    <a href="/terms/">Terms of Use</a>
-  </nav>
-  <nav aria-label="Runner tools">
-    <a href="/tools/diagnosis/">Foot diagnosis</a>
-    <a href="/tools/pace-calculator/">Pace calculator</a>
-    <a href="/tools/training-paces/">Training paces</a>
-    <a href="/reviews/">Shoe reviews</a>
-    <a href="/blog/">Running guide blog</a>
+  <h1>${escapeHtml(route.title)}</h1>
+  <p>${escapeHtml(route.description)}</p>
+  <nav aria-label="사이트 메뉴">
+    <a href="/tools/diagnosis/">무료 발 진단</a>
+    <a href="/reviews/">러닝화 리뷰</a>
+    <a href="/blog/">블로그</a>
+    <a href="/tools/">러닝 도구</a>
+    <a href="/about/">소개</a>
+    <a href="/contact/">문의</a>
+    <a href="/privacy/">개인정보처리방침</a>
+    <a href="/terms/">이용약관</a>
   </nav>
 </main>`;
 }
