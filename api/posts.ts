@@ -5,6 +5,9 @@ import { sanitizeContent, sanitizeLinks } from "./contentSanitizer.js";
 
 type PostRow = Record<string, unknown>;
 
+/** 단건 공개 응답 컬럼 (워크플로·AI 생성 관리 필드는 제외) */
+const DETAIL_COLUMNS =
+  "slug, title, excerpt, content, tags, read_time, hero_image, related_slugs, faq, generation_meta, published_at, created_at, updated_at";
 const SLUG_CACHE_MS = 5 * 60 * 1000;
 let slugCache: { slugs: Set<string>; loadedAt: number } | null = null;
 
@@ -39,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (slug) {
       const result = await tursoClient.execute({
         sql: `
-          SELECT *
+          SELECT ${DETAIL_COLUMNS}
           FROM blog_posts
           WHERE status = 'published'
             AND workflow_status = 'approved'
@@ -96,8 +99,18 @@ function parsePostRow(row: PostRow) {
     tags: parseStringArray(row.tags),
     related_slugs: parseStringArray(row.related_slugs),
     faq: parseFaqArray(row.faq),
-    generation_meta: tryParseJson(row.generation_meta),
+    generation_meta: pickPublicSeoMeta(tryParseJson(row.generation_meta)),
   };
+}
+
+/** 생성 메타 중 화면에 필요한 SEO 필드만 공개 (프롬프트·키워드 등 내부 정보 제외) */
+function pickPublicSeoMeta(meta: unknown) {
+  if (typeof meta !== "object" || meta === null) return undefined;
+  const { metaTitle, metaDescription, schemaJson } = meta as Record<
+    string,
+    unknown
+  >;
+  return { metaTitle, metaDescription, schemaJson };
 }
 
 function parseStringArray(value: unknown) {
