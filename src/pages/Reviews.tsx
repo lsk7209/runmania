@@ -545,7 +545,7 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
   const review = reviewData[shoe.name];
   const img = getShoeImage(shoe.name);
 
-  // Product + Review + AggregateRating JSON-LD (리치 스니펫용)
+  // Product + Review JSON-LD (편집부 리뷰 1건; 자체 AggregateRating은 가짜 평점 정책 위험으로 제외)
   useEffect(() => {
     if (!shoe) return;
     const id = "review-jsonld";
@@ -565,13 +565,6 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
         price: shoe.priceRange.replace(/[^0-9]/g, "") || "0",
       },
       ...(review && {
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: review.rating,
-          bestRating: 5,
-          worstRating: 1,
-          reviewCount: 1,
-        },
         review: [
           {
             "@type": "Review",

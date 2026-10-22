@@ -498,25 +498,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border px-4 py-8">
-        <div className="mx-auto max-w-5xl text-center">
-          <div className="mb-3 flex items-center justify-center gap-2 text-sm">
-            <Footprints className="h-4 w-4 text-primary" />
-            <span className="font-bold">런닝화매니아</span>
-          </div>
-          <div className="mb-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            <Link to="/about" className="hover:text-primary transition-colors">소개</Link>
-            <Link to="/contact" className="hover:text-primary transition-colors">문의</Link>
-            <Link to="/privacy" className="hover:text-primary transition-colors">개인정보처리방침</Link>
-            <Link to="/terms" className="hover:text-primary transition-colors">이용약관</Link>
-            <Link to="/blog" className="hover:text-primary transition-colors">블로그</Link>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} 런닝화매니아. 러닝화 추천 · 발 진단 플랫폼.
-          </p>
-        </div>
-      </footer>
     </main>
   );
 };

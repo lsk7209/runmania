@@ -145,6 +145,23 @@ const About = () => {
         </div>
       </section>
 
+      <section className="px-4 py-14 border-b border-border">
+        <div className="mx-auto max-w-3xl">
+          <motion.div {...fadeUp} transition={{ duration: 0.5 }}>
+            <h2 className="text-2xl font-bold mb-4">콘텐츠 제작 방식</h2>
+            <p className="text-muted-foreground text-sm leading-7">
+              런닝화매니아의 글과 리뷰는 제조사 공식 사양, 공개된 제품 자료, 러너 후기를 비교·정리한 뒤
+              에디터가 검토해 게시합니다. 일부 글은 AI 도구의 도움을 받아 초안을 작성하며, 사실관계 확인과 편집은
+              에디터가 직접 진행합니다. 리뷰의 평점은 편집부의 종합 의견이며 이용자 평점이 아닙니다.
+              잘못된 정보를 발견하면 아래 연락처로 알려 주세요. 확인 후 수정하고 수정일을 갱신합니다.
+            </p>
+            <p className="text-muted-foreground text-sm leading-7 mt-3">
+              본 사이트는 의사·물리치료사가 운영하지 않으며, 건강 관련 내용은 일반 정보일 뿐 진단이나 치료를 대체하지 않습니다.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       <section className="px-4 py-14">
         <div className="mx-auto max-w-3xl">
           <motion.div {...fadeUp} transition={{ duration: 0.5 }}>
