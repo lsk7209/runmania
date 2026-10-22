@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
+import { isNoindexPost } from "./noindexPosts.js";
 
 type PostRow = Record<string, unknown>;
 
@@ -14,7 +15,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const slug = typeof req.query.slug === "string" ? req.query.slug : undefined;
+    const slug =
+      typeof req.query.slug === "string" ? req.query.slug : undefined;
 
     if (slug) {
       const result = await tursoClient.execute({
@@ -34,7 +36,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ error: "Post not found" });
       }
 
-      return res.status(200).json(parsePostRow(row));
+      return res
+        .status(200)
+        .json({ ...parsePostRow(row), noindex: isNoindexPost(row.slug) });
     }
 
     const result = await tursoClient.execute(`
@@ -45,7 +49,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ORDER BY published_at DESC
     `);
 
-    return res.status(200).json(result.rows.map(parsePostRow));
+    // 검색 제외 글은 목록에서도 숨긴다 (URL 직접 접근은 유지)
+    return res
+      .status(200)
+      .json(
+        result.rows.filter((row) => !isNoindexPost(row.slug)).map(parsePostRow),
+      );
   } catch (error) {
     console.error("Error fetching posts:", error);
     return res.status(500).json({ error: "Failed to fetch posts" });

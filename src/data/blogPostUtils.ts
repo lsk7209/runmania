@@ -38,6 +38,8 @@ export interface BlogPost {
   relatedSlugs: string[];
   faq: FaqItem[];
   generationMeta?: BlogSeoSnapshot;
+  /** 검색 노출 제외 글 (API가 판정) */
+  noindex?: boolean;
 }
 
 type DbBlogPost = {
@@ -54,6 +56,7 @@ type DbBlogPost = {
   related_slugs?: unknown;
   faq?: unknown;
   generation_meta?: unknown;
+  noindex?: boolean | null;
 };
 
 export const mapDbPostToLocal = (dbPost: DbBlogPost): BlogPost => {
@@ -66,12 +69,16 @@ export const mapDbPostToLocal = (dbPost: DbBlogPost): BlogPost => {
     content: normalizeStringArray(dbPost.content),
     tags: normalizeStringArray(dbPost.tags),
     readTime: dbPost.read_time || "10분",
-    date: splitIsoDate(dbPost.published_at) || splitIsoDate(dbPost.created_at) || "",
+    date:
+      splitIsoDate(dbPost.published_at) ||
+      splitIsoDate(dbPost.created_at) ||
+      "",
     dateModified: splitIsoDate(dbPost.updated_at) || "",
     heroImage: HERO_IMAGE_MAP[heroImagePath] || heroImagePath || nb1080,
     relatedSlugs: normalizeStringArray(dbPost.related_slugs),
     faq: normalizeFaqItems(dbPost.faq),
     generationMeta: normalizeGenerationMeta(dbPost.generation_meta),
+    noindex: dbPost.noindex === true,
   };
 };
 
@@ -98,17 +105,24 @@ function splitIsoDate(value: string | null | undefined) {
 }
 
 function normalizeGenerationMeta(value: unknown): BlogSeoSnapshot | undefined {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    return undefined;
 
   const source = value as Record<string, unknown>;
   const schemaJson =
-    typeof source.schemaJson === "object" && source.schemaJson !== null && !Array.isArray(source.schemaJson)
+    typeof source.schemaJson === "object" &&
+    source.schemaJson !== null &&
+    !Array.isArray(source.schemaJson)
       ? (source.schemaJson as Record<string, unknown>)
       : undefined;
 
   return {
-    metaTitle: typeof source.metaTitle === "string" ? source.metaTitle : undefined,
-    metaDescription: typeof source.metaDescription === "string" ? source.metaDescription : undefined,
+    metaTitle:
+      typeof source.metaTitle === "string" ? source.metaTitle : undefined,
+    metaDescription:
+      typeof source.metaDescription === "string"
+        ? source.metaDescription
+        : undefined,
     schemaJson,
   };
 }

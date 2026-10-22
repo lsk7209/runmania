@@ -5,6 +5,7 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
+import { isNoindexPost } from "./noindexPosts.js";
 
 const BASE_URL = "https://runmania.kr";
 
@@ -81,7 +82,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   </url>`,
     );
 
-    const blogEntries = result.rows.map((row) => {
+    const indexableRows = result.rows.filter((row) => !isNoindexPost(row.slug));
+    const blogEntries = indexableRows.map((row) => {
       const lastmod = String(row.updated_at ?? row.published_at ?? "").slice(
         0,
         10,

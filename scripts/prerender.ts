@@ -8,6 +8,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { createClient } from "@libsql/client";
+import { isNoindexPost } from "../api/noindexPosts";
 
 const DIST = path.resolve(process.cwd(), "dist");
 const BASE_URL = "https://runmania.kr";
@@ -20,7 +21,10 @@ interface RouteConfig {
   keywords: string;
   ogType?: "website" | "article";
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
 }
+
+const NOINDEX_META = '<meta name="robots" content="noindex, follow" />';
 
 type DbPostRow = {
   slug?: unknown;
@@ -203,7 +207,7 @@ function injectMeta(html: string, route: RouteConfig): string {
     )
     .replace(
       /<\/head>/,
-      `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
+      `${route.noindex ? `${NOINDEX_META}\n` : ""}<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
     );
 }
 
@@ -289,7 +293,10 @@ function applyAdsenseRoutePolicy(html: string, route: RouteConfig) {
 }
 
 function writeRouteHtml(baseHtml: string, route: RouteConfig) {
-  const html = applyAdsenseRoutePolicy(injectMeta(baseHtml, route), route).replace(
+  const html = applyAdsenseRoutePolicy(
+    injectMeta(baseHtml, route),
+    route,
+  ).replace(
     '<div id="root"></div>',
     `<div id="root">${renderRouteShell(route)}</div>`,
   );
@@ -332,7 +339,9 @@ function getEnvValue(localEnv: Record<string, string>, keys: string[]) {
 }
 
 function fixTursoUrl(url: string) {
-  return url.startsWith("libsql://") ? url.replace("libsql://", "https://") : url;
+  return url.startsWith("libsql://")
+    ? url.replace("libsql://", "https://")
+    : url;
 }
 
 function tryParseJson(value: unknown) {
@@ -375,7 +384,10 @@ function normalizeBlogRoute(row: DbPostRow): RouteConfig | null {
   const title = String(row.title ?? "").trim();
   if (!slug || !title) return null;
 
-  const generationMeta = tryParseJson(row.generation_meta) as Record<string, unknown> | null;
+  const generationMeta = tryParseJson(row.generation_meta) as Record<
+    string,
+    unknown
+  > | null;
   const description =
     String(generationMeta?.metaDescription ?? "").trim() ||
     String(row.excerpt ?? "").trim() ||
@@ -407,29 +419,44 @@ function normalizeBlogRoute(row: DbPostRow): RouteConfig | null {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "홈", item: `${BASE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "블로그", item: `${BASE_URL}/blog` },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "블로그",
+        item: `${BASE_URL}/blog`,
+      },
       { "@type": "ListItem", position: 3, name: title, item: canonical },
     ],
   };
   const faqItems = normalizeFaq(row.faq);
   const faqLd =
     faqItems.length > 0
-      ? { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqItems }
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqItems,
+        }
       : null;
 
   return {
     path: `/blog/${slug}`,
-    title: String(generationMeta?.metaTitle ?? "").trim() || `${title} | 런닝화매니아`,
+    title:
+      String(generationMeta?.metaTitle ?? "").trim() ||
+      `${title} | 런닝화매니아`,
     description,
     keywords: tags.join(", "),
     ogType: "article",
     jsonLd: [articleLd, breadcrumbLd, ...(faqLd ? [faqLd] : [])],
+    noindex: isNoindexPost(slug),
   };
 }
 
 async function loadPublishedBlogRoutes() {
   const localEnv = loadLocalEnv();
-  const databaseUrl = getEnvValue(localEnv, ["TURSO_DATABASE_URL", "turso url"]);
+  const databaseUrl = getEnvValue(localEnv, [
+    "TURSO_DATABASE_URL",
+    "turso url",
+  ]);
   const authToken = getEnvValue(localEnv, ["TURSO_AUTH_TOKEN", "turso token"]);
 
   if (!databaseUrl || !authToken) {

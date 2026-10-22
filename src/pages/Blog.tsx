@@ -414,7 +414,20 @@ const TableOfContents = ({ content }: { content: string[] }) => {
 
 /* ─── useDocumentMeta ─── */
 
-const useDocumentMeta = (title: string, description: string) => {
+const useDocumentMeta = (
+  title: string,
+  description: string,
+  noindex = false,
+) => {
+  useEffect(() => {
+    if (!noindex) return;
+    const robots = document.createElement("meta");
+    robots.name = "robots";
+    robots.content = "noindex, follow";
+    document.head.appendChild(robots);
+    return () => robots.remove();
+  }, [noindex]);
+
   useEffect(() => {
     const prevTitle = document.title;
     const metaDesc = document.querySelector('meta[name="description"]');
@@ -1081,7 +1094,10 @@ const renderBodyLines = (
     }
 
     result.push(
-      <p key={idx} className="text-sm leading-relaxed text-secondary-foreground">
+      <p
+        key={idx}
+        className="text-sm leading-relaxed text-secondary-foreground"
+      >
         {renderTextWithLinks(line)}
       </p>,
     );
@@ -1145,9 +1161,7 @@ const renderContent = (paragraph: string, i: number) => {
     );
   if (paragraph.startsWith(">"))
     return (
-      <div key={i}>
-        {renderMarkdownQuote(paragraph.split("\n"), String(i))}
-      </div>
+      <div key={i}>{renderMarkdownQuote(paragraph.split("\n"), String(i))}</div>
     );
   if (CHECKLIST_LINE.test(paragraph.trim()))
     return (
@@ -1276,12 +1290,16 @@ const BlogDetail = ({ slug }: { slug: string }) => {
     let tracked = false;
     const onScroll = () => {
       if (tracked) return;
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollable =
+        document.documentElement.scrollHeight - window.innerHeight;
       if (scrollable <= 0) return;
       const progress = window.scrollY / scrollable;
       if (progress >= 0.75) {
         tracked = true;
-        trackEvent("content_read_complete", { slug: post.slug, content_type: "blog" });
+        trackEvent("content_read_complete", {
+          slug: post.slug,
+          content_type: "blog",
+        });
         window.removeEventListener("scroll", onScroll);
       }
     };
@@ -1289,7 +1307,7 @@ const BlogDetail = ({ slug }: { slug: string }) => {
     return () => window.removeEventListener("scroll", onScroll);
   }, [post?.slug]);
 
-  useDocumentMeta(seoTitle, seoDescription);
+  useDocumentMeta(seoTitle, seoDescription, post?.noindex === true);
 
   // Canonical + JSON-LD (Article + Breadcrumb + FAQ)
   useEffect(() => {
@@ -1297,7 +1315,9 @@ const BlogDetail = ({ slug }: { slug: string }) => {
     const articleUrl = `${CANONICAL_ORIGIN}/blog/${post.slug}`;
 
     // Canonical tag
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    let canonical = document.querySelector(
+      'link[rel="canonical"]',
+    ) as HTMLLinkElement | null;
     const previousCanonical = canonical?.getAttribute("href") ?? null;
     const createdCanonical = !canonical;
     if (!canonical) {
@@ -1343,7 +1363,10 @@ const BlogDetail = ({ slug }: { slug: string }) => {
       keywords: post.tags.join(", "),
     };
     const articleLd = JSON.parse(
-      JSON.stringify(rawArticleLd).replace(/https:\/\/runmania\.kr/g, CANONICAL_ORIGIN),
+      JSON.stringify(rawArticleLd).replace(
+        /https:\/\/runmania\.kr/g,
+        CANONICAL_ORIGIN,
+      ),
     );
 
     // Breadcrumb JSON-LD
@@ -1501,9 +1524,15 @@ const BlogDetail = ({ slug }: { slug: string }) => {
 
           <aside className="mt-10 rounded-xl border border-border bg-card p-4 text-xs leading-6 text-muted-foreground">
             <p>
-              작성·검토: 런닝화매니아 에디터팀. 이 글은 AI 도구의 도움을 받아 초안을 작성한 뒤 에디터가 검토·편집했으며,
-              제조사 공식 자료와 공개된 정보를 바탕으로 합니다. 일반적인 러닝화 선택 가이드이며 의료 진단을 대체하지 않습니다.
-              통증이 지속되면 정형외과 또는 스포츠의학 전문의와 상담하세요. 오류는 <a href="/contact" className="text-primary hover:underline">문의 페이지</a>로 알려 주세요.
+              작성·검토: 런닝화매니아 에디터팀. 이 글은 AI 도구의 도움을 받아
+              초안을 작성한 뒤 에디터가 검토·편집했으며, 제조사 공식 자료와
+              공개된 정보를 바탕으로 합니다. 일반적인 러닝화 선택 가이드이며
+              의료 진단을 대체하지 않습니다. 통증이 지속되면 정형외과 또는
+              스포츠의학 전문의와 상담하세요. 오류는{" "}
+              <a href="/contact" className="text-primary hover:underline">
+                문의 페이지
+              </a>
+              로 알려 주세요.
             </p>
           </aside>
 
