@@ -56,6 +56,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const autoPublishEnabled = isEnabled(settings.auto_publish_enabled);
     const publishIntervalHours = getPublishIntervalHours(settings.publish_interval_hours);
 
+    // 하루 자동 발행 상한 — 대량 발행(scaled content) 방지
+    const maxPerDay = getMaxPublishPerDay();
+    const recentCount = await tursoClient.execute({
+      sql: `SELECT COUNT(*) AS cnt FROM blog_posts WHERE status = 'published' AND published_at >= ?`,
+      args: [new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ")],
+    });
+    const publishedLast24h = Number((recentCount.rows[0] as unknown as { cnt?: number })?.cnt ?? 0);
+    const dailyCapReached = publishedLast24h >= maxPerDay;
+
     // 1단계: 예약 발행 — scheduled_at 시간이 지난 승인 포스트를 최우선 발행
     const nowIso = new Date().toISOString();
     const scheduledResult = await tursoClient.execute({
@@ -71,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     const scheduledRows = Array.isArray(scheduledResult.rows) ? scheduledResult.rows : [];
 
-    if (scheduledRows.length > 0) {
+    if (scheduledRows.length > 0 && !dailyCapReached) {
       const scheduledPost = scheduledRows[0] as unknown as PublishCandidateRow;
       await publishPost(scheduledPost.id);
       await submitIndexNowForSlug(scheduledPost.slug);
@@ -100,18 +109,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log(`[Cron] Generating content for: ${ideaPost.title}`);
       try {
         const generationResult = await generateContentForPost({ postId: ideaPost.id });
-        if (generationResult.qualityGate.passed) {
-          await tursoClient.execute({
-            sql: `UPDATE blog_posts SET workflow_status='approved', updated_at=CURRENT_TIMESTAMP WHERE id=?`,
-            args: [ideaPost.id],
-          });
-          console.log(`[Cron] Generated and approved: ${ideaPost.title}`);
-        } else {
-          console.log(`[Cron] Generated (quality gate failed, stays in reviewing): ${ideaPost.title}`);
-        }
+        // 애드센스/구글 정책(대량 AI 생성 콘텐츠 금지) 대응: AI 초안은 사람이 검토·승인하기 전까지
+        // reviewing 상태로 두고 자동 승인하지 않는다.
+        await tursoClient.execute({
+          sql: `UPDATE blog_posts SET workflow_status='reviewing', updated_at=CURRENT_TIMESTAMP WHERE id=?`,
+          args: [ideaPost.id],
+        });
+        console.log(
+          `[Cron] Generated, awaiting human review (gate ${generationResult.qualityGate.passed ? "passed" : "failed"}): ${ideaPost.title}`,
+        );
       } catch (genError: unknown) {
         console.error(`[Cron] Generation failed for ${ideaPost.title}:`, genError);
       }
+    }
+
+    if (dailyCapReached) {
+      console.log(`[Cron] Daily publish cap reached (${publishedLast24h}/${maxPerDay}).`);
+      return res.status(200).json({ success: true, message: "Daily publish cap reached" });
     }
 
     if (!autoPublishEnabled) {
@@ -163,6 +177,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error("[Cron] Error executing job:", error);
     return res.status(500).json({ error: getErrorMessage(error, "Error executing cron job") });
   }
+}
+
+function getMaxPublishPerDay() {
+  const parsed = Number(process.env.MAX_PUBLISH_PER_DAY);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 2;
 }
 
 async function publishPost(id: string) {

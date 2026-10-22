@@ -609,6 +609,7 @@ describe("admin workflow guards", () => {
       .mockResolvedValueOnce({
         rows: [{ auto_publish_enabled: 1, publish_interval_hours: 24 }],
       })
+      .mockResolvedValueOnce({ rows: [{ cnt: 0 }] })
       .mockResolvedValueOnce({
         rows: [{ id: "post-1", title: "Scheduled", slug: "scheduled-post" }],
       })
@@ -630,8 +631,8 @@ describe("admin workflow guards", () => {
       message: "Published one scheduled post",
       publishedPost: "scheduled-post",
     });
-    expect(mocks.dbExecute).toHaveBeenCalledTimes(3);
-    expect(mocks.dbExecute.mock.calls[1][0].sql).toContain("status = 'scheduled'");
+    expect(mocks.dbExecute).toHaveBeenCalledTimes(4);
+    expect(mocks.dbExecute.mock.calls[2][0].sql).toContain("status = 'scheduled'");
   });
 
   it("does not accept debug-env auth from the query string", async () => {

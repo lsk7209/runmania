@@ -641,6 +641,11 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
         {review?.detailedReview && (
           <div className="mb-8">
             <h2 className="mb-4 text-lg font-bold">📝 상세 리뷰</h2>
+            <p className="mb-4 rounded-lg border border-border bg-secondary/40 p-3 text-xs leading-5 text-muted-foreground">
+              이 리뷰는 제조사 공식 사양, 공개된 제품 정보, 러너 후기를 종합·정리한 에디터팀의 의견이며
+              에디터가 직접 장기 테스트한 결과가 아닙니다. 평점은 편집부 종합 의견이고 이용자 평점이 아닙니다.
+              가격·재고·사양은 구매 전 판매처에서 다시 확인하세요.
+            </p>
             {review.detailedReview.split("\n\n").map((para, i) => (
               <p
                 key={i}

@@ -1321,14 +1321,9 @@ const BlogDetail = ({ slug }: { slug: string }) => {
       datePublished: post.date,
       dateModified: post.dateModified || post.date,
       author: {
-        "@type": "Person",
-        name: "런닝화매니아 에디터",
+        "@type": "Organization",
+        name: "런닝화매니아 에디터팀",
         url: `${CANONICAL_ORIGIN}/about`,
-        worksFor: {
-          "@type": "Organization",
-          name: "런닝화매니아",
-          url: CANONICAL_ORIGIN,
-        },
       },
       publisher: {
         "@type": "Organization",
@@ -1503,6 +1498,14 @@ const BlogDetail = ({ slug }: { slug: string }) => {
           <div className="prose-custom space-y-4">
             {post.content.map((paragraph, i) => renderContent(paragraph, i))}
           </div>
+
+          <aside className="mt-10 rounded-xl border border-border bg-card p-4 text-xs leading-6 text-muted-foreground">
+            <p>
+              작성·검토: 런닝화매니아 에디터팀. 이 글은 AI 도구의 도움을 받아 초안을 작성한 뒤 에디터가 검토·편집했으며,
+              제조사 공식 자료와 공개된 정보를 바탕으로 합니다. 일반적인 러닝화 선택 가이드이며 의료 진단을 대체하지 않습니다.
+              통증이 지속되면 정형외과 또는 스포츠의학 전문의와 상담하세요. 오류는 <a href="/contact" className="text-primary hover:underline">문의 페이지</a>로 알려 주세요.
+            </p>
+          </aside>
 
           {/* Social Share */}
           <SocialShare title={post.title} slug={post.slug} />
