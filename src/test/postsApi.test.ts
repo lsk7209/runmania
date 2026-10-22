@@ -21,6 +21,10 @@ function createRes() {
       res.body = data;
       return res;
     }),
+    headers: {} as Record<string, string>,
+    setHeader: vi.fn((name: string, value: string) => {
+      res.headers[name] = value;
+    }),
   };
   return res;
 }
@@ -102,8 +106,29 @@ describe("공개 글 응답 필드 허용 목록", () => {
     expect(Object.keys(res.body ?? {})).not.toEqual(
       expect.arrayContaining(["workflow_status"]),
     );
-    for (const key of ["status", "scheduled_at", "generation_count", "generation_in_progress"]) {
+    for (const key of [
+      "status",
+      "scheduled_at",
+      "generation_count",
+      "generation_in_progress",
+    ]) {
       expect(res.body).not.toHaveProperty(key);
     }
+  });
+});
+
+describe("공개 글 API 캐시", () => {
+  it("단건 응답에 CDN 캐시 헤더를 건다", async () => {
+    mocks.dbExecute.mockReset();
+    mocks.dbExecute
+      .mockResolvedValueOnce({ rows: [ROW] })
+      .mockResolvedValueOnce({ rows: [{ slug: ROW.slug }] });
+    const { default: handler } = await import("../../api/posts");
+    const res = createRes();
+    await handler(
+      { method: "GET", query: { slug: ROW.slug } } as unknown as VercelRequest,
+      res as unknown as VercelResponse,
+    );
+    expect(res.headers["Cache-Control"]).toContain("s-maxage=300");
   });
 });

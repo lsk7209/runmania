@@ -36,6 +36,14 @@ type FaqItem = {
   answer: string;
 };
 
+/** 발행 글은 자주 바뀌지 않으므로 CDN 캐시 (TTFB·DB 조회 감소). 예약 발행 반영은 최대 5분 지연 */
+function setPublicCache(res: VercelResponse) {
+  res.setHeader(
+    "Cache-Control",
+    "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
+  );
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -70,6 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : null;
       const post = parsePostRow(row);
 
+      setPublicCache(res);
       return res.status(200).json({
         ...post,
         content: sanitizeContent(post.content, resolveSlug),
@@ -92,6 +101,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `);
 
     // 검색 제외·리다이렉트 글은 목록에서 숨긴다 (URL 직접 접근은 유지)
+    setPublicCache(res);
     return res
       .status(200)
       .json(

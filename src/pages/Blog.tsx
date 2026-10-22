@@ -123,12 +123,13 @@ const fetchBlogPost = async (slug: string): Promise<BlogPostQueryResult> => {
 
 /* ─── Custom Hooks: Fetch posts from DB with local fallback ─── */
 
-const useBlogListPosts = () => {
+const useBlogListPosts = (enabled = true) => {
   const query = useQuery({
     queryKey: BLOG_LIST_QUERY_KEY,
     queryFn: fetchBlogListPosts,
     staleTime: BLOG_CACHE_MS,
     gcTime: BLOG_CACHE_MS * 2,
+    enabled,
   });
 
   return {
@@ -321,6 +322,8 @@ const BlogList = () => {
                   src={post.heroImage}
                   alt={post.title}
                   className="hidden sm:block h-24 w-24 shrink-0 rounded-xl object-contain bg-secondary/30"
+                  width={96}
+                  height={96}
                   loading="lazy"
                 />
                 <div className="flex-1 min-w-0">
@@ -1241,6 +1244,8 @@ const RelatedPosts = ({
                 src={post.heroImage}
                 alt={post.title}
                 className="mb-3 h-20 w-full rounded-lg object-contain bg-secondary/30"
+                width={240}
+                height={80}
                 loading="lazy"
               />
               <p className="text-xs text-muted-foreground mb-1">{post.date}</p>
@@ -1268,8 +1273,9 @@ const RelatedPosts = ({
 /* ─── Blog Detail ─── */
 
 const BlogDetail = ({ slug }: { slug: string }) => {
-  const { posts: relatedPosts } = useBlogListPosts();
   const { post, loading, fallbackMessage } = useBlogPost(slug);
+  // 관련 글 목록(약 90KB)은 본문이 뜬 뒤에 받아 LCP 경쟁을 피한다
+  const { posts: relatedPosts } = useBlogListPosts(Boolean(post));
   const [viewCount, setViewCount] = useState<number | null>(null);
   const seoTitle =
     post?.generationMeta?.metaTitle ||
@@ -1504,6 +1510,10 @@ const BlogDetail = ({ slug }: { slug: string }) => {
                 src={post.heroImage}
                 alt={post.title}
                 className="h-40 object-contain sm:h-52"
+                width={320}
+                height={256}
+                fetchPriority="high"
+                decoding="async"
               />
             </div>
             {isShoeIllustration(post.heroImage) && (

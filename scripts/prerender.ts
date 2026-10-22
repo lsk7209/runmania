@@ -23,6 +23,8 @@ interface RouteConfig {
   ogType?: "website" | "article";
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
+  /** JS 번들 로드 전에 시작할 API 요청 (글 상세 LCP 단축) */
+  preloadApi?: string;
 }
 
 const NOINDEX_META = '<meta name="robots" content="noindex, follow" />';
@@ -205,7 +207,7 @@ function injectMeta(html: string, route: RouteConfig): string {
     )
     .replace(
       /<\/head>/,
-      `${route.noindex ? `${NOINDEX_META}\n` : ""}<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
+      `${route.noindex ? `${NOINDEX_META}\n` : ""}${route.preloadApi ? `<link rel="preload" as="fetch" href="${route.preloadApi}" crossorigin="anonymous" />\n` : ""}<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
     );
 }
 
@@ -447,6 +449,7 @@ function normalizeBlogRoute(row: DbPostRow): RouteConfig | null {
     ogType: "article",
     jsonLd: [articleLd, breadcrumbLd, ...(faqLd ? [faqLd] : [])],
     noindex: isNoindexPost(slug),
+    preloadApi: `/api/posts?slug=${encodeURIComponent(slug)}`,
   };
 }
 
