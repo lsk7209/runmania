@@ -1,28 +1,32 @@
-# Status | 마지막: 2026-05-18
+# Status | 마지막: 2026-10-22
 
 ## 현재 작업
-신규 300개 글 작성 진행 중 (45/300 완료). 5시간 간격 예약 완료.
+애드센스 승인 준비 (브랜치 `claude/fervent-bohr-dqcf8c`). 내부 점수 68/100, 신청 전.
+발행 글 635편 전수 감사 완료 → `docs/content-audit-2026-10.md`, `docs/content-audit-table.md`
 
 ## 최근 변경 (최근 5개만)
+- 10-22: 발행 글 635편 전수 감사 (템플릿 200편 noindex→삭제, 표시 오류 34편, 중복 12쌍)
+- 10-22: cron AI 초안 자동 승인 중단 + 24시간 발행 상한(기본 2)
+- 10-22: 공용 Footer, Contact/Terms 한국어화, 리뷰 AggregateRating 제거, 404 noindex
+- 10-22: prerender 영어 보일러플레이트 제거, 전역 canonical 제거
 - 05-18: 신규 300개 중 45편 DB 예약 완료 (index 300~344, 7/19~7/28 발행)
-- 05-18: 한국 마라톤 대회 가이드 5편 작성·예약 (춘천·서울JTBC·동아·경주·부산)
-- 05-18: 카본 레이스화 리뷰 10편 작성·예약 (Metaspeed Edge+ Paris, Rocket X 3 등)
-- 05-18: 카본/스피드 신발 리뷰 5편 작성·예약 (PUMA Magnify Nitro 2, Vaporfly 4 등)
-- 05-17: GA4 기반 홈페이지 이탈률 85% 개선
 
 ## TODO
-- [ ] 신규 300개 나머지 255편 작성 (다음 세션 offset 45부터)
+- [ ] 템플릿 200편 noindex + sitemap 제외 (감사 리포트 3절 1번)
+- [ ] 표시 오류 34편 수정, 템플릿 글로 가는 링크 33개 정리, 중복 12쌍 301
+- [ ] 공개 `/api/posts?slug=` 내부 필드 노출 차단
+- [ ] 고유 자료 계획, 운영자 프로필, 건강 글 47편 출처·감수 구조
+- [ ] 예약 대기 글 확인 (DB 필요), 이미지 출처 확인
 - [ ] AdSense 결제 보류/전화 PIN 확인은 계정 콘솔에서 처리
 
 ## 결정사항
+- (권고, 미확정) 신규 300개 글 추가 작성 보류: 애드센스 승인 전 대량 발행은 최대 리스크
 - WordPress 항목: 현재 Vite/Vercel 사이트라 플러그인·테마·댓글 작업은 패스
 - sitemap/RSS: 정적 파일 대신 Vercel API 동적 응답 사용
-- 자동 발행: 기본 간격 5시간
 - 대표 URL: `https://runmania.kr`
 
 ## 주의
-- 신규 글 45편 예약: 2026-07-19 13:00 ~ 2026-07-28 17:00 KST
-- 다음 글 예약 시작 시각: 2026-07-28 22:00 KST (offset 45)
-- 다음 주제: daegu-marathon-complete-guide (index 45)
+- 마지막 발행 2026-08-07, 이후 발행 없음 (예약 큐 상태 미확인)
+- main에 stash 1건: `wip-prerender-before-adsense` (scripts/prerender.ts)
 - ads.txt 확인: `google.com, pub-3050601904412736, DIRECT, f08c47fec0942fa0`
-- 로컬 dev API 검증 시 `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` 환경변수 필요
+- 로컬 dev API 검증 시 `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` 환경변수 필요 (로컬 .env에 없음)
