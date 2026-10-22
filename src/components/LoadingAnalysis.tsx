@@ -13,7 +13,7 @@ const messages = [
   "뉴발란스 프레시폼 1080 적합도 계산 중...",
   "브룩스 아드레날린 GTS 23 비교 중...",
   "쿠셔닝 밀도 & 안정성 지수 계산 중...",
-  "최적의 처방을 도출합니다.",
+  "최적의 추천을 도출합니다.",
 ];
 
 const LoadingAnalysis = ({ onComplete }: LoadingAnalysisProps) => {

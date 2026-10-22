@@ -146,20 +146,20 @@ function getFootProfile(profile: UserProfile) {
 function getPrescriptionDetail(profile: UserProfile, recommended: Shoe, banned: Shoe[]): string {
   const parts: string[] = [];
   if (profile.isWideFoot) {
-    parts.push("당신은 발볼이 넓은 타입입니다. 나이키 등 좁은 라스트의 신발은 새끼발가락 통증과 물집을 유발합니다.");
+    parts.push("당신은 발볼이 넓은 타입입니다. 나이키 등 좁은 라스트의 신발은 새끼발가락 통증과 물집의 원인이 될 수 있습니다.");
   }
   if (profile.isFlatFoot) {
-    parts.push("편평족(과내전) 소견이 있습니다. 안정성 기능이 없는 신발은 발목 안쪽에 과도한 부하를 줍니다.");
+    parts.push("편평족(과내전) 성향으로 보입니다. 안정성 기능이 없는 신발은 발목 안쪽에 부하가 커질 수 있습니다.");
   }
   if (profile.isOverweight || profile.hasKneePain) {
-    parts.push("체중 부하가 큰 조건입니다. 충분한 쿠셔닝이 없으면 무릎 연골에 충격이 누적됩니다.");
+    parts.push("체중 부하가 큰 조건입니다. 충분한 쿠셔닝이 없으면 무릎에 충격이 누적될 수 있습니다.");
   }
   if (profile.hasSolePain) {
-    parts.push("족저근막 통증 위험이 있습니다. 아치 서포트와 충분한 쿠셔닝이 핵심입니다.");
+    parts.push("발바닥 통증이 있다면 아치 서포트와 충분한 쿠셔닝을 우선 보는 것이 좋습니다. 통증이 계속되면 전문의 상담이 필요합니다.");
   }
-  parts.push(`처방 신발 '${recommended.name}'은(는) ${recommended.description}`);
+  parts.push(`추천 신발 '${recommended.name}'은(는) ${recommended.description}`);
   if (banned.length > 0) {
-    parts.push(`⚠️ ${banned.map(s => s.name).join(", ")}은(는) 현재 발 상태에 적합하지 않으므로 착용을 금합니다.`);
+    parts.push(`⚠️ ${banned.map(s => s.name).join(", ")}은(는) 입력하신 발 조건에는 맞지 않을 수 있어 권하지 않습니다.`);
   }
   return parts.join(" ");
 }

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Footprints, Target, Shield, Users, BookOpen, Zap } from "lucide-react";
 import usePageMeta from "@/hooks/usePageMeta";
 import { useEffect } from "react";
@@ -12,7 +13,8 @@ const fadeUp = {
 const About = () => {
   usePageMeta({
     title: "런닝화매니아 소개 | 러닝화 추천·발 진단 플랫폼",
-    description: "런닝화매니아는 한국 러너를 위한 러닝화 추천, 무료 발 진단, 러닝화 리뷰 전문 플랫폼입니다. 발볼·아치·통증 신호를 기반으로 객관적인 신발 추천 정보를 제공합니다.",
+    description:
+      "런닝화매니아는 한국 러너를 위한 러닝화 추천, 무료 발 진단, 러닝화 리뷰 전문 플랫폼입니다. 발볼·아치·통증 신호를 기반으로 객관적인 신발 추천 정보를 제공합니다.",
     canonicalPath: "/about",
   });
 
@@ -20,14 +22,15 @@ const About = () => {
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "AboutPage",
-      "name": "런닝화매니아 소개",
-      "url": "https://runmania.kr/about",
-      "description": "런닝화매니아는 한국 러너를 위한 러닝화 추천·리뷰·발 진단 전문 플랫폼입니다.",
-      "publisher": {
+      name: "런닝화매니아 소개",
+      url: "https://runmania.kr/about",
+      description:
+        "런닝화매니아는 한국 러너를 위한 러닝화 추천·리뷰·발 진단 전문 플랫폼입니다.",
+      publisher: {
         "@type": "Organization",
-        "name": "런닝화매니아",
-        "url": "https://runmania.kr",
-        "logo": "https://runmania.kr/og-image.png",
+        name: "런닝화매니아",
+        url: "https://runmania.kr",
+        logo: "https://runmania.kr/og-image.png",
       },
     };
     const id = "about-jsonld";
@@ -37,7 +40,9 @@ const About = () => {
     script.type = "application/ld+json";
     script.textContent = JSON.stringify(jsonLd);
     document.head.appendChild(script);
-    return () => { document.getElementById(id)?.remove(); };
+    return () => {
+      document.getElementById(id)?.remove();
+    };
   }, []);
 
   return (
@@ -57,16 +62,24 @@ const About = () => {
             런닝화매니아에 대하여
           </h1>
           <p className="text-muted-foreground leading-7 text-base">
-            런닝화매니아는 <strong>한국 러너를 위한 러닝화 추천·리뷰·발 진단 전문 플랫폼</strong>입니다.
-            신발 브랜드의 마케팅이 아니라, 발 형태·러닝 목적·체중·통증 이력을 기준으로
-            각 러너에게 실제로 맞는 신발을 분석하는 것을 목표로 합니다.
+            런닝화매니아는{" "}
+            <strong>
+              한국 러너를 위한 러닝화 추천·리뷰·발 진단 전문 플랫폼
+            </strong>
+            입니다. 신발 브랜드의 마케팅이 아니라, 발 형태·러닝 목적·체중·통증
+            이력을 기준으로 각 러너에게 실제로 맞는 신발을 분석하는 것을 목표로
+            합니다.
           </p>
         </motion.div>
       </section>
 
       <section className="px-4 py-14 border-b border-border">
         <div className="mx-auto max-w-3xl">
-          <motion.h2 {...fadeUp} transition={{ duration: 0.5 }} className="text-2xl font-bold mb-8">
+          <motion.h2
+            {...fadeUp}
+            transition={{ duration: 0.5 }}
+            className="text-2xl font-bold mb-8"
+          >
             운영 원칙
           </motion.h2>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -100,7 +113,9 @@ const About = () => {
               >
                 <div className="mb-3">{item.icon}</div>
                 <h3 className="font-bold mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-6">{item.desc}</p>
+                <p className="text-sm text-muted-foreground leading-6">
+                  {item.desc}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -109,7 +124,11 @@ const About = () => {
 
       <section className="px-4 py-14 border-b border-border">
         <div className="mx-auto max-w-3xl">
-          <motion.h2 {...fadeUp} transition={{ duration: 0.5 }} className="text-2xl font-bold mb-6">
+          <motion.h2
+            {...fadeUp}
+            transition={{ duration: 0.5 }}
+            className="text-2xl font-bold mb-6"
+          >
             제공 서비스
           </motion.h2>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -138,7 +157,9 @@ const About = () => {
               >
                 <div className="mb-2 text-primary">{item.icon}</div>
                 <h3 className="font-bold text-sm mb-1">{item.title}</h3>
-                <p className="text-xs text-muted-foreground leading-5">{item.desc}</p>
+                <p className="text-xs text-muted-foreground leading-5">
+                  {item.desc}
+                </p>
               </motion.div>
             ))}
           </div>
@@ -150,13 +171,21 @@ const About = () => {
           <motion.div {...fadeUp} transition={{ duration: 0.5 }}>
             <h2 className="text-2xl font-bold mb-4">콘텐츠 제작 방식</h2>
             <p className="text-muted-foreground text-sm leading-7">
-              런닝화매니아의 글과 리뷰는 제조사 공식 사양, 공개된 제품 자료, 러너 후기를 비교·정리한 뒤
-              에디터가 검토해 게시합니다. 일부 글은 AI 도구의 도움을 받아 초안을 작성하며, 사실관계 확인과 편집은
-              에디터가 직접 진행합니다. 리뷰의 평점은 편집부의 종합 의견이며 이용자 평점이 아닙니다.
-              잘못된 정보를 발견하면 아래 연락처로 알려 주세요. 확인 후 수정하고 수정일을 갱신합니다.
+              런닝화매니아의 글과 리뷰는 제조사 공식 사양, 공개된 제품 자료,
+              러너 후기를 비교·정리한 뒤 에디터가 검토해 게시합니다. 일부 글은
+              AI 도구의 도움을 받아 초안을 작성하며, 사실관계 확인과 편집은
+              에디터가 직접 진행합니다. 리뷰의 평점은 편집부의 종합 의견이며
+              이용자 평점이 아닙니다. 잘못된 정보를 발견하면 아래 연락처로 알려
+              주세요. 확인 후 수정하고 수정일을 갱신합니다.
             </p>
             <p className="text-muted-foreground text-sm leading-7 mt-3">
-              본 사이트는 의사·물리치료사가 운영하지 않으며, 건강 관련 내용은 일반 정보일 뿐 진단이나 치료를 대체하지 않습니다.
+              본 사이트는 의사·물리치료사가 운영하지 않으며, 건강 관련 내용은
+              일반 정보일 뿐 진단이나 치료를 대체하지 않습니다.
+            </p>
+            <p className="text-muted-foreground text-sm leading-7 mt-3">
+              무료 발 진단이 점수를 계산하는 규칙과 한계는{" "}
+              <Link to="/methodology" className="text-primary underline">진단 방법</Link>
+              에서 모두 공개합니다.
             </p>
           </motion.div>
         </div>
@@ -167,13 +196,15 @@ const About = () => {
           <motion.div {...fadeUp} transition={{ duration: 0.5 }}>
             <h2 className="text-2xl font-bold mb-4">연락처</h2>
             <p className="text-muted-foreground text-sm leading-7">
-              콘텐츠 오류, 제휴 문의, 신발 정보 수정 요청은 아래 주소로 연락해 주세요.
+              콘텐츠 오류, 제휴 문의, 신발 정보 수정 요청은 아래 주소로 연락해
+              주세요.
             </p>
             <p className="mt-3 text-sm font-medium text-primary">
               이메일: contact@runmania.kr
             </p>
             <p className="mt-6 text-xs text-muted-foreground">
-              © {new Date().getFullYear()} 런닝화매니아. 러닝화 추천 · 발 진단 플랫폼.
+              © {new Date().getFullYear()} 런닝화매니아. 러닝화 추천 · 발 진단
+              플랫폼.
             </p>
           </motion.div>
         </div>

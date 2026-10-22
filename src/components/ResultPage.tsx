@@ -170,7 +170,7 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
   const searchQuery = encodeURIComponent(result.recommended.name);
   const allRecommended = [result.recommended, ...result.alternatives];
 
-  const shareText = `🏃 내 러닝화 처방 결과: ${result.typeName}\n👟 추천: ${result.recommended.name}\n${result.banned.length > 0 ? `🚫 금지: ${result.banned.map((s) => s.name).join(", ")}\n` : ""}`;
+  const shareText = `🏃 내 러닝화 진단 결과: ${result.typeName}\n👟 추천: ${result.recommended.name}\n${result.banned.length > 0 ? `🚫 금지: ${result.banned.map((s) => s.name).join(", ")}\n` : ""}`;
   const shareUrl = window.location.href;
 
   const handleSaveImage = useCallback(async () => {
@@ -201,7 +201,7 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "러닝화 처방 결과",
+          title: "러닝화 추천 결과",
           text: shareText,
           url: shareUrl,
         });
@@ -340,7 +340,7 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
             <div className="border-b border-border p-6">
               <div className="mb-3 flex items-center gap-2 text-xs font-medium text-primary">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                처방 신발 (BEST PICK)
+                추천 신발 (BEST PICK)
               </div>
 
               <ShoeImage shoe={result.recommended} />
@@ -500,7 +500,7 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
             {/* Prescription detail */}
             <div className="p-6 prescription-bg">
               <p className="mb-2 text-[10px] tracking-widest text-muted-foreground">
-                상세 소견
+                상세 분석
               </p>
               <p className="text-sm leading-relaxed text-secondary-foreground">
                 {result.prescriptionDetail}

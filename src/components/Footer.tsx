@@ -13,6 +13,7 @@ const Footer = () => (
         className="mb-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
       >
         <Link to="/about" className="hover:text-primary transition-colors">소개</Link>
+        <Link to="/methodology" className="hover:text-primary transition-colors">진단 방법</Link>
         <Link to="/contact" className="hover:text-primary transition-colors">문의</Link>
         <Link to="/privacy" className="hover:text-primary transition-colors">개인정보처리방침</Link>
         <Link to="/terms" className="hover:text-primary transition-colors">이용약관</Link>

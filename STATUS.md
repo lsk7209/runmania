@@ -1,17 +1,18 @@
 # Status | 마지막: 2026-10-23
 
 ## 현재 작업
-애드센스 승인 준비 (브랜치 `claude/fervent-bohr-dqcf8c`). 내부 점수 78/100(추정), 신청 전.
+애드센스 승인 준비 (브랜치 `claude/fervent-bohr-dqcf8c`). 내부 점수 약 79~80/100(추정), 85는 현 조건에서 불가(실명·1차 자료·감수 없음), 신청 전.
 발행 글 635편 전수 감사 완료 → `docs/content-audit-2026-10.md`, `docs/content-audit-table.md`
 
 ## 최근 변경 (최근 5개만)
+- 10-23: /methodology 신설, 진단 결과 의료 표현 완화, LCP 개선(폰트 비차단·API 캐시·선로딩)
 - 10-23: 고유 자료 계획서, 건강 글 안내 박스, AI 일러스트 캡션, 근거 없는 "전문가" 표현 완화
 - 10-22: 중복 12쌍 301 통합 (`api/indexPolicy.ts` REDIRECTED_POSTS ↔ `vercel.json`)
 - 10-22: 본문 깨진 마커·내부 링크 응답 시점 정리 (`api/contentSanitizer.ts`), 공개 API 내부 필드 차단
-- 10-22: 템플릿 글 200편 noindex + sitemap·RSS·블로그 목록 제외
 - 10-22: 발행 글 635편 전수 감사 (`docs/content-audit-2026-10.md`)
 
 ## TODO
+- [ ] 배포 후 PageSpeed 재측정 (홈 67/LCP 4.4s, 글 64/LCP 7.6s 였음, 목표 ≥85)
 - [ ] 배포 후 2~4주: GSC로 noindex 200편 클릭 확인 → 삭제(410) 또는 301 (그때 링크 33개 정리)
 - [ ] DB 접근 시: 깨진 마커·링크 원본 수정, 통합 글 고유 문단을 대표글로 이전
 - [ ] 고유 자료 확보 실행 (`docs/unique-data-plan.md`), 감수자 확정 시 `src/data/medicalReview.ts` 입력

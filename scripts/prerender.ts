@@ -85,6 +85,13 @@ const ROUTES: RouteConfig[] = [
     keywords: "런닝화매니아 소개, 러닝화 추천, 발 진단, 러닝화 리뷰",
   },
   {
+    path: "/methodology",
+    title: "진단 방법 | 런닝화매니아",
+    description:
+      "무료 발 진단이 7문항 답변을 어떻게 점수로 바꿔 러닝화를 추천하는지, 제외 규칙과 가산 점수, 러너 유형 기준, 도구 공식과 한계를 공개합니다.",
+    keywords: "러닝화 진단 방법, 러닝화 추천 기준, 발 진단 알고리즘",
+  },
+  {
     path: "/contact",
     title: "문의하기 | 런닝화매니아",
     description:
@@ -272,6 +279,7 @@ function renderRouteShell(route: RouteConfig) {
     <a href="/blog/">블로그</a>
     <a href="/tools/">러닝 도구</a>
     <a href="/about/">소개</a>
+    <a href="/methodology/">진단 방법</a>
     <a href="/contact/">문의</a>
     <a href="/privacy/">개인정보처리방침</a>
     <a href="/terms/">이용약관</a>

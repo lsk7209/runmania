@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import usePageMeta from "@/hooks/usePageMeta";
+import { SHOES_DB } from "@/data/shoesDb";
 import { trackEvent } from "@/lib/analytics";
 
 const fadeUp = {
@@ -18,7 +19,7 @@ const fadeUp = {
 const toolCards = [
   {
     icon: <Footprints className="h-6 w-6" />,
-    title: "러닝화 처방 진단",
+    title: "러닝화 추천 진단",
     description: "7개 질문으로 내 발에 맞는 신발과 절대 신으면 안 되는 신발을 분석합니다.",
     link: "/tools/diagnosis",
     cta: "진단 시작하기",
@@ -243,7 +244,7 @@ const Home = () => {
 
           {/* 신뢰 통계 */}
           <div className="mx-auto mb-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="font-bold text-primary">30+</span> 러닝화 분석</span>
+            <span className="flex items-center gap-1"><span className="font-bold text-primary">{SHOES_DB.length}</span> 진단 대상 러닝화</span>
             <span className="text-border">|</span>
             <span className="flex items-center gap-1"><span className="font-bold text-primary">6</span> 러너 유형</span>
             <span className="text-border">|</span>
