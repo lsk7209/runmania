@@ -14,6 +14,16 @@ const NotFound = () => {
   });
 
   useEffect(() => {
+    const robots = document.createElement("meta");
+    robots.name = "robots";
+    robots.content = "noindex, follow";
+    document.head.appendChild(robots);
+    return () => {
+      robots.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
 

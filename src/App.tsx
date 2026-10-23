@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import Home from "@/pages/Home";
 
 const Diagnosis = lazy(() => import("@/pages/Diagnosis"));
@@ -24,6 +25,7 @@ const About = lazy(() => import("@/pages/About"));
 const Privacy = lazy(() => import("@/pages/Privacy"));
 const Contact = lazy(() => import("@/pages/Contact"));
 const Terms = lazy(() => import("@/pages/Terms"));
+const Methodology = lazy(() => import("@/pages/Methodology"));
 
 const queryClient = new QueryClient();
 
@@ -70,10 +72,12 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/methodology" element={<Methodology />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        <Footer />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

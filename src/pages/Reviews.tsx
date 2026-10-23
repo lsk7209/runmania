@@ -16,8 +16,15 @@ import {
   UserX,
 } from "lucide-react";
 import { SHOES_DB, type Shoe } from "@/data/shoesDb";
-import { getShoeImage } from "@/data/shoeImages";
+import {
+  ILLUSTRATION_CAPTION,
+  getShoeImage,
+  illustrationAlt,
+} from "@/data/shoeImages";
 import { reviewData } from "@/data/reviewContent";
+import { findShoeBySlug, shoeSlug } from "@/data/reviewSlug";
+import { VERIFIED_FACTS } from "@/data/productFacts";
+import { buildReviewJsonLd, buildReviewMeta, reviewPath } from "@/lib/reviewSeo";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +35,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import usePageMeta from "@/hooks/usePageMeta";
+import { trackEvent } from "@/lib/analytics";
 
 // ─── Compare Bar ─────────────────────────────────────────────
 const CompareBar = ({
@@ -228,7 +236,7 @@ const CompareView = ({
                 <div className="h-40 overflow-hidden bg-secondary">
                   <img
                     src={img}
-                    alt={shoe.name}
+                    alt={illustrationAlt(shoe.name)}
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -425,7 +433,7 @@ const ReviewList = ({
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <h1 className="mb-2 text-3xl font-bold">러닝화 리뷰 비교</h1>
       <p className="mb-4 text-muted-foreground">
-        인기 러닝화 10개 모델 상세 분석 및 스펙 비교
+        인기 러닝화 {SHOES_DB.length}개 모델 상세 분석 및 스펙 비교
       </p>
       <p className="mb-10 text-xs text-muted-foreground">
         <GitCompareArrows className="mr-1 inline h-3 w-3 text-primary" />
@@ -437,10 +445,7 @@ const ReviewList = ({
       {SHOES_DB.map((shoe, i) => {
         const review = reviewData[shoe.name];
         const img = getShoeImage(shoe.name);
-        const slug = shoe.name
-          .replace(/\s+/g, "-")
-          .replace(/[()]/g, "")
-          .toLowerCase();
+        const slug = shoeSlug(shoe.name);
         const isSelected = compareSelected.some((s) => s.name === shoe.name);
 
         return (
@@ -462,7 +467,7 @@ const ReviewList = ({
                   <div className="h-36 overflow-hidden bg-secondary">
                     <img
                       src={img}
-                      alt={`${shoe.name} ${shoe.brand} 러닝화 제품 사진`}
+                      alt={illustrationAlt(shoe.name)}
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
                   </div>
@@ -524,68 +529,18 @@ const ReviewList = ({
 
 // ─── Review Detail ───────────────────────────────────────────
 const ReviewDetail = ({ slug }: { slug: string }) => {
-  const shoe = SHOES_DB.find(
-    (s) =>
-      s.name.replace(/\s+/g, "-").replace(/[()]/g, "").toLowerCase() === slug,
-  );
+  const shoe = findShoeBySlug(slug);
 
-  usePageMeta({
-    title: shoe
-      ? `${shoe.name} 리뷰 | ${shoe.brand} 러닝화 상세 분석 | 런닝화매니아`
-      : "리뷰를 찾을 수 없습니다 | 런닝화매니아",
-    description: shoe
-      ? `${shoe.name} 상세 리뷰 - ${shoe.description}`
-      : "요청하신 러닝화 리뷰를 찾을 수 없습니다.",
-    canonicalPath: `/reviews/${slug}`,
-    keywords: shoe
-      ? `${shoe.name}, ${shoe.brand} 러닝화, 러닝화 리뷰, ${shoe.type}`
-      : "러닝화 리뷰",
-  });
+  const review = shoe ? reviewData[shoe.name] : undefined;
+  const img = shoe ? getShoeImage(shoe.name) : undefined;
 
-  const review = reviewData[shoe.name];
-  const img = getShoeImage(shoe.name);
-
-  // Product + Review + AggregateRating JSON-LD (리치 스니펫용)
+  // Product + Review JSON-LD (편집부 리뷰 1건; 자체 AggregateRating은 가짜 평점 정책 위험으로 제외)
   useEffect(() => {
     if (!shoe) return;
     const id = "review-jsonld";
     const existing = document.getElementById(id);
     if (existing) existing.remove();
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      name: shoe.name,
-      brand: { "@type": "Brand", name: shoe.brand },
-      description: shoe.description,
-      image: img ?? "https://runmania.kr/og-image.png",
-      offers: {
-        "@type": "Offer",
-        priceCurrency: "KRW",
-        availability: "https://schema.org/InStock",
-        price: shoe.priceRange.replace(/[^0-9]/g, "") || "0",
-      },
-      ...(review && {
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: review.rating,
-          bestRating: 5,
-          worstRating: 1,
-          reviewCount: 1,
-        },
-        review: [
-          {
-            "@type": "Review",
-            reviewRating: {
-              "@type": "Rating",
-              ratingValue: review.rating,
-              bestRating: 5,
-            },
-            author: { "@type": "Organization", name: "런닝화매니아" },
-            reviewBody: review.verdict,
-          },
-        ],
-      }),
-    };
+    const schema = buildReviewJsonLd(shoe, review, img);
     const script = document.createElement("script");
     script.id = id;
     script.type = "application/ld+json";
@@ -619,13 +574,18 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
         animate={{ opacity: 1, y: 0 }}
       >
         {img && (
-          <div className="mb-6 overflow-hidden rounded-2xl border border-border">
-            <img
-              src={img}
-              alt={`${shoe.name} ${shoe.brand} 러닝화 상세 리뷰 사진`}
-              className="w-full object-cover"
-            />
-          </div>
+          <figure className="mb-6">
+            <div className="overflow-hidden rounded-2xl border border-border">
+              <img
+                src={img}
+                alt={illustrationAlt(shoe.name)}
+                className="w-full object-cover"
+              />
+            </div>
+            <figcaption className="mt-2 text-center text-xs text-muted-foreground">
+              {ILLUSTRATION_CAPTION}
+            </figcaption>
+          </figure>
         )}
 
         <div className="mb-2 flex items-center gap-3">
@@ -636,7 +596,7 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
           {review && (
             <div className="flex items-center gap-1 text-sm text-primary">
               <Star className="h-4 w-4 fill-primary" />
-              {review.rating} / 5
+              <span>편집부 평점 {review.rating} / 5</span>
             </div>
           )}
         </div>
@@ -648,6 +608,12 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
         {review?.detailedReview && (
           <div className="mb-8">
             <h2 className="mb-4 text-lg font-bold">📝 상세 리뷰</h2>
+            <p className="mb-4 rounded-lg border border-border bg-secondary/40 p-3 text-xs leading-5 text-muted-foreground">
+              이 리뷰는 제조사 공식 사양, 공개된 제품 정보, 러너 후기를
+              종합·정리한 에디터팀의 의견이며 에디터가 직접 장기 테스트한 결과가
+              아닙니다. 평점은 편집부 종합 의견이고 이용자 평점이 아닙니다.
+              가격·재고·사양은 구매 전 판매처에서 다시 확인하세요.
+            </p>
             {review.detailedReview.split("\n\n").map((para, i) => (
               <p
                 key={i}
@@ -749,14 +715,31 @@ const ReviewDetail = ({ slug }: { slug: string }) => {
             </div>
 
             <div className="flex items-center justify-between pt-2 text-xs">
-              <span className="text-muted-foreground">발볼 옵션</span>
+              <span className="text-muted-foreground">폭 옵션 (사이트 데이터·국내 판매 미확인)</span>
               <span className="font-medium">
                 {shoe.widthAvailable.join(" / ")}
               </span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">가격대</span>
+              <span className="text-muted-foreground">참고 가격대 (판매가 아님)</span>
               <span className="font-medium">{shoe.priceRange}</span>
+            </div>
+            <div className="mt-3 border-t border-border pt-3 text-[11px] leading-5 text-muted-foreground">
+              {VERIFIED_FACTS[shoe.name] ? (
+                <ul className="space-y-1">
+                  {VERIFIED_FACTS[shoe.name].map((f) => (
+                    <li key={f.label}>
+                      {f.label}: {f.value} —{" "}
+                      <a href={f.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">
+                        {f.source}
+                      </a>{" "}
+                      (확인 {f.checkedAt})
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>무게·드롭 등 사양은 편집부가 정리한 값으로 제조사 원문 대조 전입니다.</p>
+              )}
             </div>
           </div>
         </div>
@@ -859,14 +842,23 @@ const Reviews = () => {
   const [compareSelected, setCompareSelected] = useState<Shoe[]>([]);
   const [showCompare, setShowCompare] = useState(false);
 
-  usePageMeta({
-    title: "러닝화 리뷰 비교 | 10개 모델 상세 분석 | 런닝화매니아",
-    description:
-      "아식스 카야노, 뉴발란스 1080, 호카 본디 등 인기 러닝화 10개 모델 상세 리뷰 및 스펙 비교.",
-    canonicalPath: "/reviews",
-    keywords:
-      "러닝화 리뷰, 러닝화 비교, 아식스 카야노, 뉴발란스 1080, 호카 본디",
-  });
+  const detailShoe = slug ? findShoeBySlug(slug) : undefined;
+  const detailMeta = detailShoe ? buildReviewMeta(detailShoe) : undefined;
+  usePageMeta(
+    slug
+      ? {
+          title: detailMeta?.title ?? "리뷰를 찾을 수 없습니다 | 런닝화매니아",
+          description: detailMeta?.description ?? "요청하신 러닝화 리뷰를 찾을 수 없습니다.",
+          canonicalPath: detailShoe ? reviewPath(detailShoe) : "/reviews",
+          keywords: detailMeta?.keywords ?? "러닝화 리뷰",
+        }
+      : {
+          title: `러닝화 리뷰 비교 | ${SHOES_DB.length}개 모델 상세 분석 | 런닝화매니아`,
+          description: `아식스 카야노, 뉴발란스 1080, 호카 본디 등 인기 러닝화 ${SHOES_DB.length}개 모델 상세 리뷰 및 스펙 비교.`,
+          canonicalPath: "/reviews",
+          keywords: "러닝화 리뷰, 러닝화 비교, 아식스 카야노, 뉴발란스 1080, 호카 본디",
+        },
+  );
 
   const handleToggleCompare = (shoe: Shoe) => {
     setCompareSelected((prev) =>
@@ -883,7 +875,10 @@ const Reviews = () => {
   };
 
   const handleCompare = () => {
-    if (compareSelected.length === 2) setShowCompare(true);
+    if (compareSelected.length === 2) {
+      trackEvent("comparison_open", { location: "reviews" });
+      setShowCompare(true);
+    }
   };
 
   const handleCloseCompare = () => {

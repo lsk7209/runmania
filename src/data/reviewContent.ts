@@ -358,7 +358,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "ASICS Novablast 5": {
+  "아식스 노바블라스트 5": {
     pros: ["Energetic rebound", "Smooth daily trainer", "Comfortable forefoot"],
     cons: [
       "Not very stable for heavy overpronators",
@@ -391,7 +391,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "Hoka Clifton 10": {
+  "호카 클리프톤 10": {
     pros: ["Easy comfort", "Smooth rocker", "Good for walking and running"],
     cons: ["Less exciting rebound", "Can feel ordinary for fast runs"],
     verdict:
@@ -421,7 +421,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "Brooks Ghost 16": {
+  "브룩스 고스트 16": {
     pros: ["Predictable ride", "Wide size options", "Very easy to recommend"],
     cons: ["Not exciting", "Heel drop may feel high for some runners"],
     verdict:
@@ -451,7 +451,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "Saucony Triumph 22": {
+  "사코니 트라이엄프 22": {
     pros: [
       "Plush long-run comfort",
       "Premium foam feel",
@@ -489,7 +489,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "Nike Invincible 3": {
+  "나이키 인빈서블 3": {
     pros: [
       "Very soft underfoot",
       "Excellent impact protection",
@@ -523,7 +523,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "Puma Deviate Nitro 3": {
+  "푸마 디비에이트 나이트로 3": {
     pros: [
       "Versatile plated ride",
       "Good value",
@@ -561,7 +561,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "Mizuno Wave Rider 28": {
+  "미즈노 웨이브 라이더 28": {
     pros: ["Stable feeling ride", "Consistent turnover", "Good durability"],
     cons: [
       "Firmer than many modern trainers",
@@ -598,7 +598,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "On Cloudmonster 2": {
+  "온 클라우드몬스터 2": {
     pros: [
       "Distinct rocker feel",
       "Bouncy for a max shoe",
@@ -636,7 +636,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "New Balance FuelCell Rebel v4": {
+  "뉴발란스 퓨얼셀 레벨 v4": {
     pros: ["Very light", "Fun and flexible", "Fast feeling without a plate"],
     cons: ["Not the most stable", "Can feel too loose for some runners"],
     verdict:
@@ -669,7 +669,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "Adidas Adizero SL 2": {
+  "아디다스 아디제로 SL 2": {
     pros: [
       "Light and efficient",
       "Good value",
@@ -707,7 +707,7 @@ export const reviewData: Record<string, ReviewContent> = {
       },
     ],
   },
-  "Nike Structure 25": {
+  "나이키 스트럭처 25": {
     pros: [
       "Useful guidance",
       "Reliable daily ride",

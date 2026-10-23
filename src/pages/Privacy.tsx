@@ -23,7 +23,7 @@ const Privacy = () => {
             <span className="text-sm font-medium">법적 고지</span>
           </div>
           <h1 className="text-3xl font-bold mb-2">개인정보처리방침</h1>
-          <p className="text-sm text-muted-foreground mb-10">최종 업데이트: 2026년 5월 17일</p>
+          <p className="text-sm text-muted-foreground mb-10">최종 업데이트: 2026년 10월 22일</p>
 
           <div className="space-y-10 text-sm leading-7 text-muted-foreground">
 
@@ -67,6 +67,14 @@ const Privacy = () => {
               <p>
                 Google Analytics·AdSense는 쿠키를 사용하여 방문자 행동을 분석하고 광고를 제공합니다.
                 브라우저 설정에서 쿠키를 비활성화할 수 있으나, 일부 기능이 제한될 수 있습니다.
+              </p>
+              <p className="mt-2">
+                Google을 포함한 제3자 공급업체는 쿠키를 사용하여 이용자가 본 사이트 또는 다른 웹사이트를 이전에 방문한
+                기록을 바탕으로 광고를 게재합니다. Google은 광고 쿠키를 사용하여 본 사이트 및 인터넷의 다른 사이트 방문 기록을
+                기반으로 이용자에게 광고를 게재할 수 있습니다. 광고 쿠키 사용을 원하지 않는 경우
+                <a href="https://adssettings.google.com" className="text-primary hover:underline ml-1" target="_blank" rel="noopener noreferrer">Google 광고 설정</a>에서
+                맞춤 광고를 해제할 수 있으며, Google이 광고 서비스에서 데이터를 사용하는 방식은
+                <a href="https://policies.google.com/technologies/partner-sites" className="text-primary hover:underline ml-1" target="_blank" rel="noopener noreferrer">Google 파트너 사이트 정책</a>에서 확인하실 수 있습니다.
               </p>
               <p className="mt-2">
                 맞춤 광고를 원하지 않는 경우:

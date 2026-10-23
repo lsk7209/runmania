@@ -37,7 +37,7 @@ export const SHOES_DB: Shoe[] = [
     cushionLevel: 4,
     stabilityLevel: 2,
     weightGrams: 309,
-    dropMm: 8,
+    dropMm: 6,
     priceRange: "17~19만원",
   },
   {
@@ -322,14 +322,15 @@ export const SHOES_DB: Shoe[] = [
   },
 ];
 
-/** 진단 엔진의 최종 출력 구조 — 추천 신발, 대안, 비추천, 처방 상세 등을 포함 */
+/** 진단 엔진의 최종 출력 구조 — 시착 후보, 대안, 주의할 모델, 선택 가이드와 근거를 포함 */
 export interface DiagnosisResult {
   typeName: string;
   typeDescription: string;
   recommended: Shoe;
   alternatives: Shoe[];
-  banned: Shoe[];
-  prescriptionDetail: string;
+  /** 입력 조건과 맞지 않을 수 있어 우선순위를 낮춘 모델 (절대적 금지가 아님) */
+  caution: Shoe[];
+  selectionGuide: string;
   tags: string[];
   footProfile: {
     width: string;
@@ -337,4 +338,14 @@ export interface DiagnosisResult {
     cushionNeed: string;
     stabilityNeed: string;
   };
+  /** 모델명 → 후보로 오른 이유 (사용자가 입력한 조건 기준) */
+  reasons: Record<string, string[]>;
+  /** 모델명 → 구매·시착 전 확인할 제품 구분/폭 옵션 안내 */
+  notes: Record<string, string[]>;
+  /** 시착 때 확인할 항목 */
+  fitChecks: string[];
+  /** 결과 해석에 영향을 주는 미입력·보정 사항 */
+  missingInfo: string[];
+  /** 입력 조건과 뚜렷하게 맞는 가산 요소가 없어 일반 후보를 보여주는 경우 */
+  lowConfidence: boolean;
 }

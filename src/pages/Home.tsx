@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import usePageMeta from "@/hooks/usePageMeta";
+import { SHOES_DB } from "@/data/shoesDb";
 import { trackEvent } from "@/lib/analytics";
 
 const fadeUp = {
@@ -18,7 +19,7 @@ const fadeUp = {
 const toolCards = [
   {
     icon: <Footprints className="h-6 w-6" />,
-    title: "러닝화 처방 진단",
+    title: "러닝화 추천 진단",
     description: "7개 질문으로 내 발에 맞는 신발과 절대 신으면 안 되는 신발을 분석합니다.",
     link: "/tools/diagnosis",
     cta: "진단 시작하기",
@@ -230,20 +231,20 @@ const Home = () => {
           </div>
 
           <h1 className="mb-6 text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-5xl">
-            러닝화 추천, 내 발에 맞는 신발
+            내 발에 맞는 러닝화,
             <br />
-            <span className="neon-text text-primary">데이터</span>로 찾아드립니다.
+            <span className="neon-text text-primary">근거</span>를 보고 고르세요.
           </h1>
 
           <p className="mx-auto mb-8 max-w-md text-base text-muted-foreground sm:text-lg">
-            발볼, 아치, 통증 신호, 러닝 목적을 함께 보고
+            발 치수와 착용 경험으로 후보를 좁히고,
             <br />
-            초보 러너가 피해야 할 신발까지 정리합니다.
+            제품별 폭 옵션과 착화 정보를 비교하세요.
           </p>
 
           {/* 신뢰 통계 */}
           <div className="mx-auto mb-8 flex items-center justify-center gap-6 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="font-bold text-primary">30+</span> 러닝화 분석</span>
+            <span className="flex items-center gap-1"><span className="font-bold text-primary">{SHOES_DB.length}</span> 진단 대상 러닝화</span>
             <span className="text-border">|</span>
             <span className="flex items-center gap-1"><span className="font-bold text-primary">6</span> 러너 유형</span>
             <span className="text-border">|</span>
@@ -259,13 +260,13 @@ const Home = () => {
                 size="lg"
                 className="group gap-2 rounded-xl bg-primary px-8 py-6 text-base font-semibold text-primary-foreground neon-border transition-all hover:neon-border-strong"
               >
-                무료 발 진단 받기
+                내 러닝화 찾기
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link
-              to="/blog"
-              onClick={() => trackEvent("cta_clicked", { location: "home_hero", target: "blog" })}
+              to="/reviews"
+              onClick={() => trackEvent("cta_clicked", { location: "home_hero", target: "reviews" })}
             >
               <Button
                 size="lg"
@@ -273,7 +274,7 @@ const Home = () => {
                 className="gap-2 rounded-xl border-border px-8 py-6 text-base hover:bg-secondary"
               >
                 <BookOpen className="h-4 w-4" />
-                블로그 보기
+                모델 비교
               </Button>
             </Link>
           </div>
@@ -498,25 +499,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border px-4 py-8">
-        <div className="mx-auto max-w-5xl text-center">
-          <div className="mb-3 flex items-center justify-center gap-2 text-sm">
-            <Footprints className="h-4 w-4 text-primary" />
-            <span className="font-bold">런닝화매니아</span>
-          </div>
-          <div className="mb-3 flex items-center justify-center gap-4 text-xs text-muted-foreground">
-            <Link to="/about" className="hover:text-primary transition-colors">소개</Link>
-            <Link to="/contact" className="hover:text-primary transition-colors">문의</Link>
-            <Link to="/privacy" className="hover:text-primary transition-colors">개인정보처리방침</Link>
-            <Link to="/terms" className="hover:text-primary transition-colors">이용약관</Link>
-            <Link to="/blog" className="hover:text-primary transition-colors">블로그</Link>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} 런닝화매니아. 러닝화 추천 · 발 진단 플랫폼.
-          </p>
-        </div>
-      </footer>
     </main>
   );
 };

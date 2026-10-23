@@ -1,5 +1,5 @@
-﻿import { useState, useEffect, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+﻿import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -19,6 +19,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import usePageMeta from "@/hooks/usePageMeta";
+import HealthNotice from "@/components/HealthNotice";
 import { trackEvent } from "@/lib/analytics";
 import {
   Accordion,
@@ -38,6 +39,18 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import type { BlogPost } from "@/data/blogPostUtils";
 import { mapDbPostToLocal } from "@/data/blogPostUtils";
+import { ILLUSTRATION_CAPTION, isShoeIllustration } from "@/data/shoeImages";
+import BlogListControls from "@/components/BlogListControls";
+import Pagination from "@/components/Pagination";
+import {
+  countByCategory,
+  filterPosts,
+  paginate,
+  parseListingState,
+  toListingParams,
+  type CategoryKey,
+  type ListingState,
+} from "@/lib/blogListing";
 
 const BLOG_LIST_QUERY_KEY = ["blog-post-list"];
 const BLOG_POST_QUERY_KEY = "blog-post";
@@ -121,12 +134,13 @@ const fetchBlogPost = async (slug: string): Promise<BlogPostQueryResult> => {
 
 /* ─── Custom Hooks: Fetch posts from DB with local fallback ─── */
 
-const useBlogListPosts = () => {
+const useBlogListPosts = (enabled = true) => {
   const query = useQuery({
     queryKey: BLOG_LIST_QUERY_KEY,
     queryFn: fetchBlogListPosts,
     staleTime: BLOG_CACHE_MS,
     gcTime: BLOG_CACHE_MS * 2,
+    enabled,
   });
 
   return {
@@ -151,41 +165,6 @@ const useBlogPost = (slug: string) => {
   };
 };
 
-/* ─── Category Filter ─── */
-
-type CategoryKey = "all" | "pain" | "body" | "compare" | "tips";
-
-const CATEGORIES: { key: CategoryKey; label: string }[] = [
-  { key: "all", label: "전체" },
-  { key: "pain", label: "통증/부상" },
-  { key: "body", label: "발유형/체형" },
-  { key: "compare", label: "브랜드 비교" },
-  { key: "tips", label: "러닝 실전" },
-];
-
-const POST_CATEGORY: Record<string, CategoryKey> = {
-  "knee-pain-running-shoes": "pain",
-  "plantar-fasciitis-shoes": "pain",
-  "shin-splints-running-shoes": "pain",
-  "achilles-tendon-shoes": "pain",
-  "hip-pain-running-shoes": "pain",
-  "flat-foot-stability": "body",
-  "wide-foot-running-shoes": "body",
-  "overweight-running-shoes": "body",
-  "high-arch-running-shoes": "body",
-  "supination-running-shoes": "body",
-  "women-running-shoes": "body",
-  "nike-vs-newbalance": "compare",
-  "hoka-vs-asics": "compare",
-  "brooks-vs-saucony": "compare",
-  "best-running-shoes-2025": "tips",
-  "beginner-running-shoe-guide": "tips",
-  "running-shoe-lifespan": "tips",
-  "treadmill-vs-outdoor-shoes": "tips",
-  "running-shoe-stack-height": "tips",
-  "break-in-running-shoes": "tips",
-};
-
 const DataFallbackNotice = ({ message }: { message: string }) => (
   <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-900">
     <div className="flex items-start gap-2">
@@ -205,8 +184,34 @@ const BlogList = () => {
     canonicalPath: "/blog",
     keywords: "러닝화 블로그, 러닝화 추천, 발 건강, 러닝 부상 예방",
   });
-  const [activeCategory, setActiveCategory] = useState<CategoryKey>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
   const { posts, loading, fallbackMessage } = useBlogListPosts();
+  const state = parseListingState(searchParams);
+  const filtered = useMemo(
+    () => filterPosts(posts, state.query, state.category),
+    [posts, state.query, state.category],
+  );
+  const counts = useMemo(() => countByCategory(posts, state.query), [posts, state.query]);
+  const { items: pagePosts, page, totalPages } = paginate(filtered, state.page);
+  const isRefined = state.query !== "" || state.category !== "all" || page > 1;
+
+  const updateListing = (next: Partial<ListingState>, replace = false) => {
+    setSearchParams(toListingParams({ ...state, page: 1, ...next }), { replace });
+  };
+  const hrefForPage = (n: number) => {
+    const qs = toListingParams({ ...state, page: n }).toString();
+    return qs ? `/blog?${qs}` : "/blog";
+  };
+
+  // 검색·분류·2페이지 이상은 중복 목록이라 색인에서 제외 (글 상세는 목록 링크로 계속 탐색 가능)
+  useEffect(() => {
+    if (!isRefined) return;
+    const robots = document.createElement("meta");
+    robots.name = "robots";
+    robots.content = "noindex, follow";
+    document.head.appendChild(robots);
+    return () => robots.remove();
+  }, [isRefined]);
   const queryClient = useQueryClient();
 
   const prefetchPost = useCallback(
@@ -222,7 +227,7 @@ const BlogList = () => {
 
   // ItemList JSON-LD for blog listing
   useEffect(() => {
-    if (posts.length === 0) return;
+    if (pagePosts.length === 0) return;
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
@@ -230,9 +235,9 @@ const BlogList = () => {
       description: "발 건강과 러닝화에 대한 깊이 있는 분석",
       mainEntity: {
         "@type": "ItemList",
-        itemListElement: posts.map((post, i) => ({
+        itemListElement: pagePosts.map((post, i) => ({
           "@type": "ListItem",
-          position: i + 1,
+          position: (page - 1) * pagePosts.length + i + 1,
           url: `${CANONICAL_ORIGIN}/blog/${post.slug}`,
           name: post.title,
         })),
@@ -246,7 +251,7 @@ const BlogList = () => {
     return () => {
       document.getElementById("bloglist-jsonld")?.remove();
     };
-  }, [posts]);
+  }, [pagePosts, page]);
 
   if (loading) {
     return (
@@ -255,11 +260,6 @@ const BlogList = () => {
       </div>
     );
   }
-
-  const filteredPosts =
-    activeCategory === "all"
-      ? posts
-      : posts.filter((p) => POST_CATEGORY[p.slug] === activeCategory);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 pt-24">
@@ -275,34 +275,21 @@ const BlogList = () => {
           <DataFallbackNotice message={fallbackMessage} />
         ) : null}
 
-        {/* Category Filter */}
-        <div className="mb-8 flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                activeCategory === cat.key
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
-              }`}
-            >
-              {cat.label}
-              {cat.key !== "all" && (
-                <span className="ml-1.5 text-xs opacity-70">
-                  {
-                    posts.filter((p) => POST_CATEGORY[p.slug] === cat.key)
-                      .length
-                  }
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <BlogListControls
+          query={state.query}
+          category={state.category}
+          counts={counts}
+          onQueryChange={(query) => updateListing({ query }, true)}
+          onCategoryChange={(category: CategoryKey) => updateListing({ category })}
+        />
+        <p className="mb-4 text-sm text-muted-foreground" aria-live="polite">
+          {filtered.length}개의 글
+          {totalPages > 1 ? ` · ${page}/${totalPages} 페이지` : ""}
+        </p>
       </motion.div>
 
       <div className="space-y-4">
-        {filteredPosts.map((post, i) => (
+        {pagePosts.map((post, i) => (
           <motion.div
             key={post.slug}
             initial={{ opacity: 0, y: 20 }}
@@ -319,6 +306,8 @@ const BlogList = () => {
                   src={post.heroImage}
                   alt={post.title}
                   className="hidden sm:block h-24 w-24 shrink-0 rounded-xl object-contain bg-secondary/30"
+                  width={96}
+                  height={96}
                   loading="lazy"
                 />
                 <div className="flex-1 min-w-0">
@@ -351,12 +340,20 @@ const BlogList = () => {
             </Link>
           </motion.div>
         ))}
-        {filteredPosts.length === 0 && (
-          <p className="py-12 text-center text-muted-foreground">
-            해당 카테고리의 글이 없습니다.
-          </p>
+        {filtered.length === 0 && (
+          <div className="py-12 text-center text-muted-foreground">
+            <p>조건에 맞는 글이 없습니다.</p>
+            <button
+              type="button"
+              onClick={() => updateListing({ query: "", category: "all" })}
+              className="mt-3 text-sm text-primary underline"
+            >
+              검색 조건 초기화
+            </button>
+          </div>
         )}
       </div>
+      <Pagination page={page} totalPages={totalPages} hrefFor={hrefForPage} />
     </div>
   );
 };
@@ -414,7 +411,20 @@ const TableOfContents = ({ content }: { content: string[] }) => {
 
 /* ─── useDocumentMeta ─── */
 
-const useDocumentMeta = (title: string, description: string) => {
+const useDocumentMeta = (
+  title: string,
+  description: string,
+  noindex = false,
+) => {
+  useEffect(() => {
+    if (!noindex) return;
+    const robots = document.createElement("meta");
+    robots.name = "robots";
+    robots.content = "noindex, follow";
+    document.head.appendChild(robots);
+    return () => robots.remove();
+  }, [noindex]);
+
   useEffect(() => {
     const prevTitle = document.title;
     const metaDesc = document.querySelector('meta[name="description"]');
@@ -592,7 +602,7 @@ const parseMarkdownTable = (raw: string) => {
               <TableRow key={i}>
                 {row.map((cell, j) => (
                   <TableCell key={j} className="text-xs">
-                    {cell}
+                    {renderTextWithLinks(cell)}
                   </TableCell>
                 ))}
               </TableRow>
@@ -616,7 +626,7 @@ const parseTable = (raw: string) => {
           <TableRow className="bg-secondary/50">
             {headers.map((h, i) => (
               <TableHead key={i} className="text-xs font-bold text-foreground">
-                {h.trim()}
+                {renderTextWithLinks(h.trim())}
               </TableHead>
             ))}
           </TableRow>
@@ -626,7 +636,7 @@ const parseTable = (raw: string) => {
             <TableRow key={i}>
               {row.map((cell, j) => (
                 <TableCell key={j} className="text-xs">
-                  {cell.trim()}
+                  {renderTextWithLinks(cell.trim())}
                 </TableCell>
               ))}
             </TableRow>
@@ -683,7 +693,7 @@ const parseChecklist = (raw: string) => {
         <div key={i} className="flex items-start gap-2.5">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <span className="text-sm text-secondary-foreground">
-            {item.trim()}
+            {renderTextWithLinks(item.trim())}
           </span>
         </div>
       ))}
@@ -716,13 +726,15 @@ const parseInfoBox = (raw: string) => {
     <div className="my-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
       <div className="mb-2 flex items-center gap-2">
         <Info className="h-4 w-4 shrink-0 text-blue-400" />
-        <span className="text-sm font-bold text-foreground">{title}</span>
+        <span className="text-sm font-bold text-foreground">
+          {renderTextWithLinks(title)}
+        </span>
       </div>
       {bodyParts.length > 0 && (
         <div className="ml-6 space-y-1">
           {bodyParts.map((line, i) => (
             <p key={i} className="text-sm text-secondary-foreground">
-              {line}
+              {renderTextWithLinks(line)}
             </p>
           ))}
         </div>
@@ -737,13 +749,15 @@ const parseWarning = (raw: string) => {
     <div className="my-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
       <div className="mb-2 flex items-center gap-2">
         <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
-        <span className="text-sm font-bold text-foreground">{title}</span>
+        <span className="text-sm font-bold text-foreground">
+          {renderTextWithLinks(title)}
+        </span>
       </div>
       {bodyParts.length > 0 && (
         <div className="ml-6 space-y-1">
           {bodyParts.map((line, i) => (
             <p key={i} className="text-sm text-secondary-foreground">
-              {line}
+              {renderTextWithLinks(line)}
             </p>
           ))}
         </div>
@@ -758,13 +772,15 @@ const parseTip = (raw: string) => {
     <div className="my-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
       <div className="mb-2 flex items-center gap-2">
         <Lightbulb className="h-4 w-4 shrink-0 text-primary" />
-        <span className="text-sm font-bold text-foreground">{title}</span>
+        <span className="text-sm font-bold text-foreground">
+          {renderTextWithLinks(title)}
+        </span>
       </div>
       {bodyParts.length > 0 && (
         <div className="ml-6 space-y-1">
           {bodyParts.map((line, i) => (
             <p key={i} className="text-sm text-secondary-foreground">
-              {line}
+              {renderTextWithLinks(line)}
             </p>
           ))}
         </div>
@@ -997,7 +1013,7 @@ const renderBodyLines = (
                 <TableRow key={i}>
                   {row.map((cell, j) => (
                     <TableCell key={j} className="text-xs">
-                      {cell}
+                      {renderTextWithLinks(cell)}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -1081,7 +1097,10 @@ const renderBodyLines = (
     }
 
     result.push(
-      <p key={idx} className="text-sm leading-relaxed text-secondary-foreground">
+      <p
+        key={idx}
+        className="text-sm leading-relaxed text-secondary-foreground"
+      >
         {renderTextWithLinks(line)}
       </p>,
     );
@@ -1145,9 +1164,7 @@ const renderContent = (paragraph: string, i: number) => {
     );
   if (paragraph.startsWith(">"))
     return (
-      <div key={i}>
-        {renderMarkdownQuote(paragraph.split("\n"), String(i))}
-      </div>
+      <div key={i}>{renderMarkdownQuote(paragraph.split("\n"), String(i))}</div>
     );
   if (CHECKLIST_LINE.test(paragraph.trim()))
     return (
@@ -1219,6 +1236,8 @@ const RelatedPosts = ({
                 src={post.heroImage}
                 alt={post.title}
                 className="mb-3 h-20 w-full rounded-lg object-contain bg-secondary/30"
+                width={240}
+                height={80}
                 loading="lazy"
               />
               <p className="text-xs text-muted-foreground mb-1">{post.date}</p>
@@ -1246,8 +1265,9 @@ const RelatedPosts = ({
 /* ─── Blog Detail ─── */
 
 const BlogDetail = ({ slug }: { slug: string }) => {
-  const { posts: relatedPosts } = useBlogListPosts();
   const { post, loading, fallbackMessage } = useBlogPost(slug);
+  // 관련 글 목록(약 90KB)은 본문이 뜬 뒤에 받아 LCP 경쟁을 피한다
+  const { posts: relatedPosts } = useBlogListPosts(Boolean(post));
   const [viewCount, setViewCount] = useState<number | null>(null);
   const seoTitle =
     post?.generationMeta?.metaTitle ||
@@ -1276,12 +1296,16 @@ const BlogDetail = ({ slug }: { slug: string }) => {
     let tracked = false;
     const onScroll = () => {
       if (tracked) return;
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollable =
+        document.documentElement.scrollHeight - window.innerHeight;
       if (scrollable <= 0) return;
       const progress = window.scrollY / scrollable;
       if (progress >= 0.75) {
         tracked = true;
-        trackEvent("content_read_complete", { slug: post.slug, content_type: "blog" });
+        trackEvent("content_read_complete", {
+          slug: post.slug,
+          content_type: "blog",
+        });
         window.removeEventListener("scroll", onScroll);
       }
     };
@@ -1289,7 +1313,7 @@ const BlogDetail = ({ slug }: { slug: string }) => {
     return () => window.removeEventListener("scroll", onScroll);
   }, [post?.slug]);
 
-  useDocumentMeta(seoTitle, seoDescription);
+  useDocumentMeta(seoTitle, seoDescription, post?.noindex === true);
 
   // Canonical + JSON-LD (Article + Breadcrumb + FAQ)
   useEffect(() => {
@@ -1297,7 +1321,9 @@ const BlogDetail = ({ slug }: { slug: string }) => {
     const articleUrl = `${CANONICAL_ORIGIN}/blog/${post.slug}`;
 
     // Canonical tag
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    let canonical = document.querySelector(
+      'link[rel="canonical"]',
+    ) as HTMLLinkElement | null;
     const previousCanonical = canonical?.getAttribute("href") ?? null;
     const createdCanonical = !canonical;
     if (!canonical) {
@@ -1321,14 +1347,9 @@ const BlogDetail = ({ slug }: { slug: string }) => {
       datePublished: post.date,
       dateModified: post.dateModified || post.date,
       author: {
-        "@type": "Person",
-        name: "런닝화매니아 에디터",
+        "@type": "Organization",
+        name: "런닝화매니아 에디터팀",
         url: `${CANONICAL_ORIGIN}/about`,
-        worksFor: {
-          "@type": "Organization",
-          name: "런닝화매니아",
-          url: CANONICAL_ORIGIN,
-        },
       },
       publisher: {
         "@type": "Organization",
@@ -1348,7 +1369,10 @@ const BlogDetail = ({ slug }: { slug: string }) => {
       keywords: post.tags.join(", "),
     };
     const articleLd = JSON.parse(
-      JSON.stringify(rawArticleLd).replace(/https:\/\/runmania\.kr/g, CANONICAL_ORIGIN),
+      JSON.stringify(rawArticleLd).replace(
+        /https:\/\/runmania\.kr/g,
+        CANONICAL_ORIGIN,
+      ),
     );
 
     // Breadcrumb JSON-LD
@@ -1421,6 +1445,13 @@ const BlogDetail = ({ slug }: { slug: string }) => {
     );
   }
 
+  // 사이트 내 이동은 Vercel 301을 거치지 않으므로 대표글로 교체 이동
+  if (post?.redirectTo) {
+    return (
+      <Navigate to={`/blog/${encodeURIComponent(post.redirectTo)}`} replace />
+    );
+  }
+
   if (!post) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-14">
@@ -1465,13 +1496,24 @@ const BlogDetail = ({ slug }: { slug: string }) => {
           animate={{ opacity: 1, y: 0 }}
         >
           {/* Hero Image */}
-          <div className="mb-6 flex justify-center rounded-2xl bg-secondary/30 p-6">
-            <img
-              src={post.heroImage}
-              alt={post.title}
-              className="h-40 object-contain sm:h-52"
-            />
-          </div>
+          <figure className="mb-6">
+            <div className="flex justify-center rounded-2xl bg-secondary/30 p-6">
+              <img
+                src={post.heroImage}
+                alt={post.title}
+                className="h-40 object-contain sm:h-52"
+                width={320}
+                height={256}
+                fetchPriority="high"
+                decoding="async"
+              />
+            </div>
+            {isShoeIllustration(post.heroImage) && (
+              <figcaption className="mt-2 text-center text-xs text-muted-foreground">
+                {ILLUSTRATION_CAPTION}
+              </figcaption>
+            )}
+          </figure>
 
           <div className="mb-6 flex items-center gap-3 text-xs text-muted-foreground">
             <span>{post.date}</span>
@@ -1498,11 +1540,26 @@ const BlogDetail = ({ slug }: { slug: string }) => {
             ))}
           </div>
 
+          {post.healthTopic && <HealthNotice />}
           <TableOfContents content={post.content} />
 
           <div className="prose-custom space-y-4">
             {post.content.map((paragraph, i) => renderContent(paragraph, i))}
           </div>
+
+          <aside className="mt-10 rounded-xl border border-border bg-card p-4 text-xs leading-6 text-muted-foreground">
+            <p>
+              작성·검토: 런닝화매니아 에디터팀. 이 글은 AI 도구의 도움을 받아
+              초안을 작성한 뒤 에디터가 검토·편집했으며, 제조사 공식 자료와
+              공개된 정보를 바탕으로 합니다. 일반적인 러닝화 선택 가이드이며
+              의료 진단을 대체하지 않습니다. 통증이 지속되면 정형외과 또는
+              스포츠의학 전문의와 상담하세요. 오류는{" "}
+              <a href="/contact" className="text-primary hover:underline">
+                문의 페이지
+              </a>
+              로 알려 주세요.
+            </p>
+          </aside>
 
           {/* Social Share */}
           <SocialShare title={post.title} slug={post.slug} />
@@ -1528,7 +1585,7 @@ const BlogDetail = ({ slug }: { slug: string }) => {
                       {item.question}
                     </AccordionTrigger>
                     <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                      {item.answer}
+                      {renderTextWithLinks(item.answer)}
                     </AccordionContent>
                   </AccordionItem>
                 ))}

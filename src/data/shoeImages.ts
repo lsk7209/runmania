@@ -25,3 +25,17 @@ const shoeImages: Record<string, string> = {
 export function getShoeImage(name: string): string | undefined {
   return shoeImages[name];
 }
+
+/** 신발 이미지는 AI 생성 참고 일러스트 — 실물 사진으로 오인되지 않게 표기 (docs/unique-data-plan.md 4절) */
+export const ILLUSTRATION_CAPTION =
+  "참고용 일러스트 · 실제 제품 사진이 아닙니다";
+
+const ILLUSTRATION_SRCS = new Set(Object.values(shoeImages));
+
+export function isShoeIllustration(src: string): boolean {
+  return ILLUSTRATION_SRCS.has(src);
+}
+
+export function illustrationAlt(name: string): string {
+  return `${name} 참고 일러스트`;
+}

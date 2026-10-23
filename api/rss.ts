@@ -5,8 +5,11 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { tursoClient } from "./db.js";
+import { isIndexablePost } from "./indexPolicy.js";
+import { softenMetaText } from "./metaText.js";
 
 const BASE_URL = "https://runmania.kr";
+const FEED_ITEM_LIMIT = 50;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).end();
@@ -16,20 +19,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `SELECT slug, title, excerpt, published_at
        FROM blog_posts
        WHERE status = 'published' AND workflow_status = 'approved'
-       ORDER BY published_at DESC
-       LIMIT 50`,
+       ORDER BY published_at DESC`,
     );
 
     const items = result.rows
+      .filter((row) => isIndexablePost(row.slug))
+      .slice(0, FEED_ITEM_LIMIT)
       .map((row) => {
         const pubDate = row.published_at
           ? new Date(String(row.published_at)).toUTCString()
           : new Date().toUTCString();
-        const title = String(row.title ?? "")
+        const title = softenMetaText(String(row.title ?? ""))
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
-        const excerpt = String(row.excerpt ?? "")
+        const excerpt = softenMetaText(String(row.excerpt ?? ""))
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");

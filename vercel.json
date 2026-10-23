@@ -8,7 +8,19 @@
             "source": "/diagnosis",
             "destination": "/tools/diagnosis",
             "permanent": true
-        }
+        },
+        { "source": "/blog/running-shoe-cleaning-maintenance-guide", "destination": "/blog/running-shoe-cleaning-care-guide", "permanent": true },
+        { "source": "/blog/high-arch-running-shoes", "destination": "/blog/high-arch-foot-running-shoes-guide", "permanent": true },
+        { "source": "/blog/shin-splints-running-shoes", "destination": "/blog/shin-splints-running-shoes-guide", "permanent": true },
+        { "source": "/blog/break-in-running-shoes", "destination": "/blog/running-shoe-break-in-guide", "permanent": true },
+        { "source": "/blog/rainy-day-running-waterproof-shoes-guide", "destination": "/blog/running-in-rain-shoe-guide", "permanent": true },
+        { "source": "/blog/nike-asics-newbalance-brand-comparison-2025", "destination": "/blog/running-shoe-brand-comparison-guide", "permanent": true },
+        { "source": "/blog/marathon-sub5-training-plan-12weeks", "destination": "/blog/marathon-12week-training-plan-shoes", "permanent": true },
+        { "source": "/blog/running-shoes-lifespan-replacement-guide", "destination": "/blog/when-to-replace-running-shoes-guide", "permanent": true },
+        { "source": "/blog/running-shoe-insole-top5-recommendation", "destination": "/blog/running-shoe-insole-guide", "permanent": true },
+        { "source": "/blog/budget-running-shoes-under-100k-2025", "destination": "/blog/budget-running-shoes-guide-2026", "permanent": true },
+        { "source": "/blog/nike-pegasus-41-review-2025", "destination": "/blog/nike-pegasus-41-review", "permanent": true },
+        { "source": "/blog/post-run-stretching-complete-routine", "destination": "/blog/running-post-run-recovery-routine-guide", "permanent": true }
     ],
     "rewrites": [
         {

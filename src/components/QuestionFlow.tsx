@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, CreditCard, Footprints, Activity, Weight, Zap, AlertTriangle, Cloud } from "lucide-react";
+import { ArrowLeft, ArrowRight, Ruler, Footprints, Activity, Weight, Zap, AlertTriangle, Cloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import type { UserAnswers } from "@/lib/diagnosisEngine";
+import FootMeasurementStep from "@/components/FootMeasurementStep";
+import type { FitFeeling, UserAnswers } from "@/lib/diagnosisEngine";
 
 interface QuestionFlowProps {
   onComplete: (answers: UserAnswers) => void;
@@ -31,26 +32,25 @@ const questions: QuestionDef[] = [
     id: "q1",
     icon: <Footprints className="h-5 w-5" />,
     question: "현재 신고 있거나 신어본 브랜드는?",
-    subtitle: "가장 최근에 신은 러닝화 브랜드를 선택하세요",
+    subtitle: "가장 최근에 신은 러닝화 브랜드를 선택하세요. 브랜드별 폭 설명은 모델마다 달라 참고용입니다",
     options: [
-      { value: "nike", label: "나이키", description: "좁은 편" },
-      { value: "adidas", label: "아디다스", description: "좁은/표준" },
-      { value: "newbalance", label: "뉴발란스", description: "넓은 편" },
-      { value: "asics", label: "아식스", description: "표준/넓은" },
+      { value: "nike", label: "나이키" },
+      { value: "adidas", label: "아디다스" },
+      { value: "newbalance", label: "뉴발란스" },
+      { value: "asics", label: "아식스" },
+      { value: "other", label: "기타 브랜드" },
+      { value: "first", label: "첫 구매 (러닝화 경험 없음)" },
+      { value: "unknown", label: "잘 모르겠음" },
     ],
     answerKey: "q1Brand",
   },
   {
     id: "q2",
-    icon: <CreditCard className="h-5 w-5" />,
-    question: "신용카드를 발바닥 가장 넓은 곳에 대보세요.",
-    subtitle: "카드 너비(약 54mm)를 발볼에 대고 비교하세요",
-    options: [
-      { value: "narrow", label: "카드가 발볼을 덮거나 남는다", description: "좁은 발" },
-      { value: "standard", label: "발볼이 카드 밖으로 살짝 나온다", description: "표준" },
-      { value: "wide", label: "발볼이 카드보다 훨씬 넓다", description: "넓은 발 (4E)" },
-    ],
-    answerKey: "q2Width",
+    icon: <Ruler className="h-5 w-5" />,
+    question: "발 길이와 가장 넓은 폭을 알고 있나요?",
+    subtitle: "선택 입력입니다. 모르면 건너뛰어도 추천을 받을 수 있어요",
+    options: [],
+    answerKey: "footLengthMm",
   },
   {
     id: "q3",
@@ -110,26 +110,35 @@ const questions: QuestionDef[] = [
   },
 ];
 
-const nikeSubQuestion: QuestionDef = {
+const FIT_OPTIONS: { value: FitFeeling; label: string; description?: string }[] = [
+  { value: "forefoot-tight", label: "앞볼·새끼발가락이 눌렸다" },
+  { value: "instep-tight", label: "발등이 조였다" },
+  { value: "heel-slip", label: "뒤꿈치가 들렸다" },
+  { value: "loose", label: "전체적으로 헐렁했다" },
+  { value: "fine", label: "괜찮았다" },
+  { value: "unknown", label: "잘 모르겠다" },
+];
+
+const fitQuestion: QuestionDef = {
   id: "q1sub",
   icon: <Footprints className="h-5 w-5" />,
-  question: "나이키를 신었을 때 느낌이 어땠나요?",
-  options: [
-    { value: "pinky-pain", label: "새끼발가락이 아팠다", description: "→ 넓은 발 가능성" },
-    { value: "loose", label: "헐렁했다", description: "→ 좁은 발 가능성" },
-    { value: "fine", label: "괜찮았다", description: "→ 표준" },
-  ],
-  answerKey: "q1SubFeeling",
+  question: "그 신발을 신었을 때 가장 크게 느낀 점은?",
+  subtitle: "사이즈·폭 옵션까지 기억나면 더 좋지만, 느낌만으로도 충분해요",
+  options: FIT_OPTIONS,
+  answerKey: "q2Fit",
 };
+
+/** 러닝화 경험이 없거나 기억나지 않으면 착용 경험 질문은 건너뛴다 */
+const NO_FIT_HISTORY_BRANDS = ["first", "unknown"];
 
 const QuestionFlow = ({ onComplete }: QuestionFlowProps) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [showNikeSub, setShowNikeSub] = useState(false);
+  const [showFitSub, setShowFitSub] = useState(false);
   const [answers, setAnswers] = useState<PartialAnswers>({});
   const [direction, setDirection] = useState(1);
 
   const totalSteps = 7;
-  const currentQuestion = showNikeSub ? nikeSubQuestion : questions[currentStep];
+  const currentQuestion = showFitSub ? fitQuestion : questions[currentStep];
   const progress = ((currentStep + 1) / totalSteps) * 100;
 
   const handleSelect = (value: string) => {
@@ -137,19 +146,22 @@ const QuestionFlow = ({ onComplete }: QuestionFlowProps) => {
     const newAnswers = { ...answers, [key]: value };
     setAnswers(newAnswers);
 
-    // Nike sub-question logic
-    if (currentStep === 0 && value === "nike" && !showNikeSub) {
+    // 브랜드 선택 후 착용 경험 질문
+    if (currentStep === 0 && !showFitSub && !NO_FIT_HISTORY_BRANDS.includes(value)) {
       setTimeout(() => {
         setDirection(1);
-        setShowNikeSub(true);
+        setShowFitSub(true);
       }, 200);
       return;
     }
 
-    // Move to next
+    advance(newAnswers);
+  };
+
+  const advance = (newAnswers: PartialAnswers) => {
     setTimeout(() => {
-      if (showNikeSub) {
-        setShowNikeSub(false);
+      if (showFitSub) {
+        setShowFitSub(false);
         setDirection(1);
         setCurrentStep(1);
         return;
@@ -164,9 +176,15 @@ const QuestionFlow = ({ onComplete }: QuestionFlowProps) => {
     }, 300);
   };
 
+  const handleMeasurement = (lengthMm?: number, widthMm?: number) => {
+    const newAnswers = { ...answers, footLengthMm: lengthMm, footWidthMm: widthMm };
+    setAnswers(newAnswers);
+    advance(newAnswers);
+  };
+
   const handleBack = () => {
-    if (showNikeSub) {
-      setShowNikeSub(false);
+    if (showFitSub) {
+      setShowFitSub(false);
       return;
     }
     if (currentStep > 0) {
@@ -192,7 +210,7 @@ const QuestionFlow = ({ onComplete }: QuestionFlowProps) => {
         <Progress value={progress} className="mb-8 h-1.5 bg-secondary [&>div]:bg-primary" />
 
         {/* Back button */}
-        {(currentStep > 0 || showNikeSub) && (
+        {(currentStep > 0 || showFitSub) && (
           <button
             onClick={handleBack}
             className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -226,21 +244,10 @@ const QuestionFlow = ({ onComplete }: QuestionFlowProps) => {
               )}
             </div>
 
-            {/* Credit card visual for Q2 */}
-            {currentQuestion.id === "q2" && (
-              <div className="mb-6 flex items-center justify-center">
-                <div className="relative">
-                  {/* Foot outline */}
-                  <div className="h-32 w-24 rounded-[40%_40%_30%_30%] border-2 border-dashed border-muted-foreground/30" />
-                  {/* Card overlay */}
-                  <div className="absolute left-1/2 top-1/2 h-12 w-[54px] -translate-x-1/2 -translate-y-1/2 rounded border border-primary/50 bg-primary/10 text-[8px] flex items-center justify-center text-primary/60">
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Options */}
+            {currentQuestion.id === "q2" ? (
+              <FootMeasurementStep onSubmit={handleMeasurement} />
+            ) : (
             <div className="space-y-3">
               {currentQuestion.options.map((opt) => {
                 const isSelected = answers[currentQuestion.answerKey] === opt.value;
@@ -271,6 +278,7 @@ const QuestionFlow = ({ onComplete }: QuestionFlowProps) => {
                 );
               })}
             </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

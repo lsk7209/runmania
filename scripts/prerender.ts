@@ -8,6 +8,15 @@
 import * as fs from "fs";
 import * as path from "path";
 import { createClient } from "@libsql/client";
+import { isNoindexPost } from "../api/indexPolicy";
+import { softenMetaText } from "../api/metaText";
+import { SHOES_DB } from "../src/data/shoesDb";
+import { reviewData } from "../src/data/reviewContent";
+import {
+  buildReviewJsonLd,
+  buildReviewMeta,
+  reviewPath,
+} from "../src/lib/reviewSeo";
 
 const DIST = path.resolve(process.cwd(), "dist");
 const BASE_URL = "https://runmania.kr";
@@ -20,7 +29,16 @@ interface RouteConfig {
   keywords: string;
   ogType?: "website" | "article";
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
+  /** 클라이언트가 같은 JSON-LD를 다시 그릴 때 중복되지 않도록 지정하는 script id */
+  jsonLdId?: string;
+  /** 초기 HTML 본문에 추가할 실제 콘텐츠 요약 */
+  shellExtra?: string;
+  /** JS 번들 로드 전에 시작할 API 요청 (글 상세 LCP 단축) */
+  preloadApi?: string;
 }
+
+const NOINDEX_META = '<meta name="robots" content="noindex, follow" />';
 
 type DbPostRow = {
   slug?: unknown;
@@ -38,7 +56,7 @@ const ROUTES: RouteConfig[] = [
     path: "/",
     title: "러닝화 추천 · 무료 발 진단 · 신발 리뷰 | 런닝화매니아",
     description:
-      "3분 무료 발 진단으로 내 발 유형(평발·요족·정상)에 맞는 최적의 러닝화를 추천받으세요. 러닝화 리뷰, 달리기 팁, 훈련 계획까지.",
+      "발 치수와 착용 경험으로 러닝화 시착 후보를 좁히고, 모델별 폭 옵션과 착화 정보를 비교하세요. 무료 진단, 리뷰, 달리기 도구까지.",
     keywords: "러닝화 추천, 발 진단, 러닝화 리뷰, 족저근막염 신발, 평발 러닝화",
   },
   {
@@ -57,9 +75,9 @@ const ROUTES: RouteConfig[] = [
   },
   {
     path: "/reviews",
-    title: "러닝화 리뷰 — 29개 모델 상세 비교 | 런닝화매니아",
+    title: `러닝화 리뷰 — ${SHOES_DB.length}개 모델 상세 비교 | 런닝화매니아`,
     description:
-      "아식스 카야노, 나이키 페가수스, 호카 본다이 등 국내 유통 러닝화 29개 모델 상세 리뷰 및 스펙 비교.",
+      `아식스 카야노, 나이키 페가수스, 호카 본디 등 러닝화 ${SHOES_DB.length}개 모델 상세 리뷰 및 스펙 비교.`,
     keywords: "러닝화 리뷰, 러닝화 비교, 아식스 리뷰, 나이키 리뷰, 호카 리뷰",
   },
   {
@@ -72,34 +90,38 @@ const ROUTES: RouteConfig[] = [
   },
   {
     path: "/about",
-    title: "About Runmania | Running shoe guides and tools",
+    title: "런닝화매니아 소개 | 러닝화 추천·발 진단 플랫폼",
     description:
-      "Runmania publishes running shoe guides, review summaries, free calculators, and practical information for runners.",
-    keywords:
-      "Runmania, running shoe guide, running shoe recommendation, running tools",
+      "런닝화매니아는 한국 러너를 위한 러닝화 추천, 무료 발 진단, 러닝화 리뷰 전문 플랫폼입니다. 발볼·아치·통증 신호를 기반으로 객관적인 신발 추천 정보를 제공합니다.",
+    keywords: "런닝화매니아 소개, 러닝화 추천, 발 진단, 러닝화 리뷰",
+  },
+  {
+    path: "/methodology",
+    title: "진단 방법 | 런닝화매니아",
+    description:
+      "무료 발 진단이 7문항 답변을 어떻게 점수로 바꿔 러닝화를 추천하는지, 제외 규칙과 가산 점수, 러너 유형 기준, 도구 공식과 한계를 공개합니다.",
+    keywords: "러닝화 진단 방법, 러닝화 추천 기준, 발 진단 알고리즘",
   },
   {
     path: "/contact",
-    title: "Contact | Runmania",
+    title: "문의하기 | 런닝화매니아",
     description:
-      "Contact Runmania for content corrections, partnership inquiries, privacy requests, and running shoe recommendation feedback.",
-    keywords:
-      "Runmania contact, running shoe recommendation inquiry, contact@runmania.kr",
+      "런닝화매니아에 콘텐츠 오류 제보, 제휴 문의, 개인정보 관련 요청, 러닝화 추천 피드백을 보내실 수 있습니다.",
+    keywords: "런닝화매니아 문의, 러닝화 추천 문의, contact@runmania.kr",
   },
   {
     path: "/privacy",
-    title: "Privacy Policy | Runmania",
+    title: "개인정보처리방침 | 런닝화매니아",
     description:
-      "Runmania privacy policy explains analytics, advertising cookies, data use, third-party services, and contact details.",
-    keywords:
-      "Runmania privacy policy, Google Analytics, Google AdSense, privacy contact",
+      "런닝화매니아의 개인정보처리방침입니다. 수집 정보, 이용 목적, 제3자 제공, 쿠키 정책 등을 안내합니다.",
+    keywords: "런닝화매니아 개인정보처리방침, 쿠키 정책, 광고 쿠키",
   },
   {
     path: "/terms",
-    title: "Terms of Use | Runmania",
+    title: "이용약관 | 런닝화매니아",
     description:
-      "Runmania terms of use covering educational content, product information, advertising disclosure, and contact details.",
-    keywords: "Runmania terms, terms of use, advertising disclosure",
+      "런닝화매니아 이용약관: 교육 목적의 콘텐츠, 제품 정보, 광고·제휴 고지, AI 활용 고지, 문의처를 안내합니다.",
+    keywords: "런닝화매니아 이용약관, 광고 고지, 제휴 링크",
   },
   {
     path: "/tools/calorie-calculator",
@@ -156,7 +178,11 @@ function injectMeta(html: string, route: RouteConfig): string {
   const canonical = `${BASE_URL}${route.path === "/" ? "" : route.path}`;
   const jsonLd = route.jsonLd ?? buildJsonLd(route, canonical);
 
-  return html
+  const baseWithCanonical = /<link rel="canonical"[^>]*>/.test(html)
+    ? html
+    : html.replace("</head>", '    <link rel="canonical" href="" />\n</head>');
+
+  return baseWithCanonical
     .replace(
       /<title>[^<]*<\/title>/,
       `<title>${escapeHtml(route.title)}</title>`,
@@ -199,7 +225,7 @@ function injectMeta(html: string, route: RouteConfig): string {
     )
     .replace(
       /<\/head>/,
-      `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
+      `${route.noindex ? `${NOINDEX_META}\n` : ""}${route.preloadApi ? `<link rel="preload" as="fetch" href="${route.preloadApi}" crossorigin="anonymous" />\n` : ""}<script${route.jsonLdId ? ` id="${route.jsonLdId}"` : ""} type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
     );
 }
 
@@ -249,76 +275,45 @@ function ensureDir(dir: string) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+/**
+ * JS 실행 전 초기 HTML에 들어가는 최소 셸.
+ * 실제 화면(React)과 같은 정보만 담는다: 제목, 요약, 주요 링크.
+ * (크롤러 전용 보일러플레이트 텍스트는 클로킹으로 오해받을 수 있어 넣지 않는다.)
+ */
 function renderRouteShell(route: RouteConfig) {
-  const routeFocus =
-    route.path === "/tools/diagnosis"
-      ? "This diagnosis page explains how runners can prepare the seven-question foot and training survey, what the result means, and why the recommendation should be checked against fit, return policy, and personal comfort before buying shoes."
-      : route.path === "/tools/pace-calculator"
-        ? "This pace calculator page explains how to compare goal time, distance, and training pace without treating the result as a coaching prescription."
-        : route.path === "/tools/training-paces"
-          ? "This training paces page explains easy, tempo, interval, and long-run pace ranges so runners can compare effort zones before planning a week."
-          : route.path === "/tools"
-            ? "This tools hub groups calculators and shoe-selection utilities so visitors can move from diagnosis to pace, size, and training references without losing context."
-            : route.path === "/reviews"
-              ? "This review page summarizes shoe categories, fit warnings, and comparison criteria instead of promising one universal best running shoe."
-              : route.path === "/blog"
-                ? "This blog index helps readers find practical running shoe guides, beginner training notes, and injury-prevention context from the editorial archive."
-                : route.path === "/about"
-                  ? "This about page describes the editorial scope, limitations, correction process, and reader-first purpose of Runmania."
-                  : route.path === "/contact"
-                    ? "This contact page gives readers a direct path for corrections, privacy requests, partnership questions, and product information feedback."
-                    : route.path === "/privacy"
-                      ? "This privacy page explains analytics, advertising cookies, third-party services, and contact rights in plain language."
-                      : route.path === "/terms"
-                        ? "This terms page explains that Runmania is educational content, not medical care, retail fulfillment, or a guarantee of product availability."
-                        : "This page is part of Runmania's running shoe guide system and connects shoe choice, training context, and responsible reader decision-making.";
-
-  const routeDetail = `
-    <p>${escapeHtml(routeFocus)}</p>
-    <p>Runmania is built for Korean runners who need a practical starting point before they choose running shoes or use a running calculator. The site looks at foot width, arch type, pronation risk, weekly distance, running purpose, body weight, discomfort signals, and training intensity. Those factors matter because the most expensive shoe is not always the safest or most comfortable option for a real runner. A beginner who walks and jogs three times a week may need a very different shoe from a marathon runner, a wide-foot runner, or a runner who already feels knee, ankle, or plantar fascia discomfort.</p>
-    <p>The editorial approach is conservative. Recommendations explain why a model category may fit a situation, what tradeoffs to check, and when a reader should slow down and ask a professional. The site does not diagnose injuries, does not replace a doctor, and does not guarantee that any shoe will remove pain. When pain persists, when swelling appears, or when a runner has a medical history, the safer path is to consult a qualified professional before increasing mileage or buying equipment based only on an online guide.</p>
-    <p>For shoe-selection content, readers should compare fit in the afternoon, leave enough toe room for long runs, test heel lockdown, check midfoot pressure, and confirm whether the retailer allows returns after indoor try-on. Runners with wide feet should check width labels such as D, 2E, and 4E instead of relying only on brand reputation. Runners with flat feet or overpronation signals should compare stability features, but they should also avoid assuming that every stability shoe is automatically better. Comfort, gait, terrain, pace, and training load all interact.</p>
-    <p>For calculator pages, the numbers are reference estimates. Pace, calorie, heart-rate, race prediction, and training-zone outputs can help organize a plan, but they cannot know fatigue, weather, illness, sleep, nutrition, or injury status. A calculator result should be used as a comparison point, not as a fixed order. If a result feels too hard or causes pain, the correct action is to reduce effort and reassess.</p>
-    <p>Runmania keeps core trust pages visible for AdSense and search review. Readers can review the about page, contact page, privacy policy, and terms of use from this document before the JavaScript application loads. The same route also links to the diagnosis tool, pace calculator, training pace calculator, review archive, and blog index so crawlers and users can understand the site's structure from plain HTML. This reduces thin-page risk and makes the purpose of each page clear even on slow connections or script-limited crawlers.</p>
-    <p>Advertising may appear through Google AdSense Auto Ads. Advertising does not change the editorial caution on shoe choice, training load, health claims, or product availability. If affiliate or commercial references are added in the future, they should be disclosed clearly near the related content. Readers should still verify current prices, sizes, release versions, and seller policies because product information can change faster than an editorial guide.</p>
-    <p>Recommended next steps for visitors are simple. First, read the page summary and decide whether the route matches the question. Second, use the foot diagnosis if the question is about shoe category. Third, use the pace or training tools only as planning references. Fourth, read supporting blog and review pages for context. Fifth, contact the site when a correction is needed. This route-level guidance is intentionally visible in server-generated HTML so search engines, AdSense reviewers, and accessibility tools can evaluate the page without waiting for the client app.</p>
-    <p>The same standard applies across every public route. Each page should have a clear title, useful description, canonical URL, readable headings, internal navigation, policy links, and enough body context to stand on its own. A visitor who lands directly on a calculator or diagnosis route should still understand who operates the site, what the page can and cannot do, where to find related guides, and how to request a correction. That structure is important for search quality, AdSense review, and real users who arrive from mobile search results.</p>`;
-
   return `<main class="prerender-shell">
-  <header>
-    <p>Runmania</p>
-    <h1>${escapeHtml(route.title)}</h1>
-    <p>${escapeHtml(route.description)}</p>
-  </header>
-  <section>
-    <h2>Page summary</h2>
-    <p>${escapeHtml(route.description)}</p>
-    ${routeDetail}
-  </section>
-  <section>
-    <h2>Editorial checklist</h2>
-    <ul>
-      <li>Use the page as educational reference content, not as a medical diagnosis.</li>
-      <li>Confirm shoe size, width, return policy, and current product specifications before purchase.</li>
-      <li>Stop increasing training load when pain, swelling, numbness, or unusual fatigue appears.</li>
-      <li>Use internal guides to compare diagnosis, reviews, pace, training zones, and size conversion.</li>
-      <li>Send corrections through the contact page when a model, price, or policy reference is outdated.</li>
-    </ul>
-  </section>
-  <nav aria-label="Site policy links">
-    <a href="/about/">About</a>
-    <a href="/contact/">Contact</a>
-    <a href="/privacy/">Privacy Policy</a>
-    <a href="/terms/">Terms of Use</a>
-  </nav>
-  <nav aria-label="Runner tools">
-    <a href="/tools/diagnosis/">Foot diagnosis</a>
-    <a href="/tools/pace-calculator/">Pace calculator</a>
-    <a href="/tools/training-paces/">Training paces</a>
-    <a href="/reviews/">Shoe reviews</a>
-    <a href="/blog/">Running guide blog</a>
+  <h1>${escapeHtml(route.title)}</h1>
+  <p>${escapeHtml(route.description)}</p>${route.shellExtra ?? ""}
+  <nav aria-label="사이트 메뉴">
+    <a href="/tools/diagnosis/">무료 발 진단</a>
+    <a href="/reviews/">러닝화 리뷰</a>
+    <a href="/blog/">블로그</a>
+    <a href="/tools/">러닝 도구</a>
+    <a href="/about/">소개</a>
+    <a href="/methodology/">진단 방법</a>
+    <a href="/contact/">문의</a>
+    <a href="/privacy/">개인정보처리방침</a>
+    <a href="/terms/">이용약관</a>
   </nav>
 </main>`;
+}
+
+function buildReviewRoutes(): RouteConfig[] {
+  return SHOES_DB.map((shoe) => {
+    const review = reviewData[shoe.name];
+    const meta = buildReviewMeta(shoe);
+    const specs = `<ul><li>무게 ${shoe.weightGrams}g</li><li>드롭 ${shoe.dropMm}mm</li><li>폭 옵션 ${shoe.widthAvailable.join(" / ")}</li><li>참고 가격대 ${escapeHtml(shoe.priceRange)}</li></ul>`;
+    const verdict = review ? `<p>${escapeHtml(review.verdict)}</p>` : "";
+    return {
+      path: reviewPath(shoe),
+      title: meta.title,
+      description: meta.description,
+      keywords: meta.keywords,
+      jsonLd: buildReviewJsonLd(shoe, review, undefined),
+      jsonLdId: "review-jsonld",
+      shellExtra: `${verdict}${specs}`,
+    };
+  });
 }
 
 function isReaderDetailRoute(route: RouteConfig) {
@@ -335,7 +330,10 @@ function applyAdsenseRoutePolicy(html: string, route: RouteConfig) {
 }
 
 function writeRouteHtml(baseHtml: string, route: RouteConfig) {
-  const html = applyAdsenseRoutePolicy(injectMeta(baseHtml, route), route).replace(
+  const html = applyAdsenseRoutePolicy(
+    injectMeta(baseHtml, route),
+    route,
+  ).replace(
     '<div id="root"></div>',
     `<div id="root">${renderRouteShell(route)}</div>`,
   );
@@ -378,7 +376,9 @@ function getEnvValue(localEnv: Record<string, string>, keys: string[]) {
 }
 
 function fixTursoUrl(url: string) {
-  return url.startsWith("libsql://") ? url.replace("libsql://", "https://") : url;
+  return url.startsWith("libsql://")
+    ? url.replace("libsql://", "https://")
+    : url;
 }
 
 function tryParseJson(value: unknown) {
@@ -418,14 +418,18 @@ function normalizeFaq(value: unknown) {
 
 function normalizeBlogRoute(row: DbPostRow): RouteConfig | null {
   const slug = String(row.slug ?? "").trim();
-  const title = String(row.title ?? "").trim();
+  const title = softenMetaText(String(row.title ?? "").trim());
   if (!slug || !title) return null;
 
-  const generationMeta = tryParseJson(row.generation_meta) as Record<string, unknown> | null;
-  const description =
+  const generationMeta = tryParseJson(row.generation_meta) as Record<
+    string,
+    unknown
+  > | null;
+  const description = softenMetaText(
     String(generationMeta?.metaDescription ?? "").trim() ||
-    String(row.excerpt ?? "").trim() ||
-    `${title}에 대한 러닝화 선택 기준과 실전 체크포인트를 정리했습니다.`;
+      String(row.excerpt ?? "").trim() ||
+      `${title}에 대한 러닝화 선택 기준과 실전 체크포인트를 정리했습니다.`,
+  );
   const tags = normalizeStringArray(row.tags);
   const canonical = `${BASE_URL}/blog/${slug}`;
   const publishedAt = String(row.published_at ?? "").trim();
@@ -453,29 +457,45 @@ function normalizeBlogRoute(row: DbPostRow): RouteConfig | null {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "홈", item: `${BASE_URL}/` },
-      { "@type": "ListItem", position: 2, name: "블로그", item: `${BASE_URL}/blog` },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "블로그",
+        item: `${BASE_URL}/blog`,
+      },
       { "@type": "ListItem", position: 3, name: title, item: canonical },
     ],
   };
   const faqItems = normalizeFaq(row.faq);
   const faqLd =
     faqItems.length > 0
-      ? { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqItems }
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqItems,
+        }
       : null;
 
   return {
     path: `/blog/${slug}`,
-    title: String(generationMeta?.metaTitle ?? "").trim() || `${title} | 런닝화매니아`,
+    title:
+      softenMetaText(String(generationMeta?.metaTitle ?? "").trim()) ||
+      `${title} | 런닝화매니아`,
     description,
     keywords: tags.join(", "),
     ogType: "article",
     jsonLd: [articleLd, breadcrumbLd, ...(faqLd ? [faqLd] : [])],
+    noindex: isNoindexPost(slug),
+    preloadApi: `/api/posts?slug=${encodeURIComponent(slug)}`,
   };
 }
 
 async function loadPublishedBlogRoutes() {
   const localEnv = loadLocalEnv();
-  const databaseUrl = getEnvValue(localEnv, ["TURSO_DATABASE_URL", "turso url"]);
+  const databaseUrl = getEnvValue(localEnv, [
+    "TURSO_DATABASE_URL",
+    "turso url",
+  ]);
   const authToken = getEnvValue(localEnv, ["TURSO_AUTH_TOKEN", "turso token"]);
 
   if (!databaseUrl || !authToken) {
@@ -508,7 +528,7 @@ async function main() {
 
   const baseHtml = fs.readFileSync(indexHtml, "utf-8");
   const blogRoutes = await loadPublishedBlogRoutes();
-  const routes = [...ROUTES, ...blogRoutes];
+  const routes = [...ROUTES, ...buildReviewRoutes(), ...blogRoutes];
   console.log(`🚀 Prerendering ${routes.length} routes...\n`);
 
   // deduplicate routes
