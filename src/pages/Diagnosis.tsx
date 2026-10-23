@@ -6,6 +6,7 @@ import LandingPage from "@/components/LandingPage";
 import { diagnose, type UserAnswers } from "@/lib/diagnosisEngine";
 import type { DiagnosisResult } from "@/data/shoesDb";
 import usePageMeta from "@/hooks/usePageMeta";
+import { trackEvent } from "@/lib/analytics";
 
 type Phase = "intro" | "questions" | "loading" | "result";
 
@@ -20,8 +21,18 @@ const Diagnosis = () => {
     keywords: "러닝화 진단, 발 진단, 맞춤 러닝화, 족저근막염 신발, 편평족 러닝화",
   });
 
+  const handleStart = useCallback(() => {
+    trackEvent("diagnosis_start");
+    setPhase("questions");
+  }, []);
+
   const handleQuestionsComplete = useCallback((answers: UserAnswers) => {
     const diagnosisResult = diagnose(answers);
+    // 원시 발 치수·통증 답변은 보내지 않고 결과 요약만 보낸다
+    trackEvent("diagnosis_complete", {
+      type: diagnosisResult.typeName.slice(0, 6),
+      low_confidence: diagnosisResult.lowConfidence,
+    });
     setResult(diagnosisResult);
     setPhase("loading");
   }, []);
@@ -37,7 +48,7 @@ const Diagnosis = () => {
 
   return (
     <div className="min-h-screen bg-background pt-14">
-      {phase === "intro" && <LandingPage onStart={() => setPhase("questions")} />}
+      {phase === "intro" && <LandingPage onStart={handleStart} />}
       {phase === "questions" && <QuestionFlow onComplete={handleQuestionsComplete} />}
       {phase === "loading" && <LoadingAnalysis onComplete={handleLoadingComplete} />}
       {phase === "result" && result && <ResultPage result={result} onRestart={handleRestart} />}

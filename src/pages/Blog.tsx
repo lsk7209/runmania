@@ -1,5 +1,5 @@
-﻿import { useState, useEffect, useCallback } from "react";
-import { Link, Navigate, useParams } from "react-router-dom";
+﻿import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -40,6 +40,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { BlogPost } from "@/data/blogPostUtils";
 import { mapDbPostToLocal } from "@/data/blogPostUtils";
 import { ILLUSTRATION_CAPTION, isShoeIllustration } from "@/data/shoeImages";
+import BlogListControls from "@/components/BlogListControls";
+import Pagination from "@/components/Pagination";
+import {
+  countByCategory,
+  filterPosts,
+  paginate,
+  parseListingState,
+  toListingParams,
+  type CategoryKey,
+  type ListingState,
+} from "@/lib/blogListing";
 
 const BLOG_LIST_QUERY_KEY = ["blog-post-list"];
 const BLOG_POST_QUERY_KEY = "blog-post";
@@ -154,41 +165,6 @@ const useBlogPost = (slug: string) => {
   };
 };
 
-/* ─── Category Filter ─── */
-
-type CategoryKey = "all" | "pain" | "body" | "compare" | "tips";
-
-const CATEGORIES: { key: CategoryKey; label: string }[] = [
-  { key: "all", label: "전체" },
-  { key: "pain", label: "통증/부상" },
-  { key: "body", label: "발유형/체형" },
-  { key: "compare", label: "브랜드 비교" },
-  { key: "tips", label: "러닝 실전" },
-];
-
-const POST_CATEGORY: Record<string, CategoryKey> = {
-  "knee-pain-running-shoes": "pain",
-  "plantar-fasciitis-shoes": "pain",
-  "shin-splints-running-shoes": "pain",
-  "achilles-tendon-shoes": "pain",
-  "hip-pain-running-shoes": "pain",
-  "flat-foot-stability": "body",
-  "wide-foot-running-shoes": "body",
-  "overweight-running-shoes": "body",
-  "high-arch-running-shoes": "body",
-  "supination-running-shoes": "body",
-  "women-running-shoes": "body",
-  "nike-vs-newbalance": "compare",
-  "hoka-vs-asics": "compare",
-  "brooks-vs-saucony": "compare",
-  "best-running-shoes-2025": "tips",
-  "beginner-running-shoe-guide": "tips",
-  "running-shoe-lifespan": "tips",
-  "treadmill-vs-outdoor-shoes": "tips",
-  "running-shoe-stack-height": "tips",
-  "break-in-running-shoes": "tips",
-};
-
 const DataFallbackNotice = ({ message }: { message: string }) => (
   <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-900">
     <div className="flex items-start gap-2">
@@ -208,8 +184,34 @@ const BlogList = () => {
     canonicalPath: "/blog",
     keywords: "러닝화 블로그, 러닝화 추천, 발 건강, 러닝 부상 예방",
   });
-  const [activeCategory, setActiveCategory] = useState<CategoryKey>("all");
+  const [searchParams, setSearchParams] = useSearchParams();
   const { posts, loading, fallbackMessage } = useBlogListPosts();
+  const state = parseListingState(searchParams);
+  const filtered = useMemo(
+    () => filterPosts(posts, state.query, state.category),
+    [posts, state.query, state.category],
+  );
+  const counts = useMemo(() => countByCategory(posts, state.query), [posts, state.query]);
+  const { items: pagePosts, page, totalPages } = paginate(filtered, state.page);
+  const isRefined = state.query !== "" || state.category !== "all" || page > 1;
+
+  const updateListing = (next: Partial<ListingState>, replace = false) => {
+    setSearchParams(toListingParams({ ...state, page: 1, ...next }), { replace });
+  };
+  const hrefForPage = (n: number) => {
+    const qs = toListingParams({ ...state, page: n }).toString();
+    return qs ? `/blog?${qs}` : "/blog";
+  };
+
+  // 검색·분류·2페이지 이상은 중복 목록이라 색인에서 제외 (글 상세는 목록 링크로 계속 탐색 가능)
+  useEffect(() => {
+    if (!isRefined) return;
+    const robots = document.createElement("meta");
+    robots.name = "robots";
+    robots.content = "noindex, follow";
+    document.head.appendChild(robots);
+    return () => robots.remove();
+  }, [isRefined]);
   const queryClient = useQueryClient();
 
   const prefetchPost = useCallback(
@@ -225,7 +227,7 @@ const BlogList = () => {
 
   // ItemList JSON-LD for blog listing
   useEffect(() => {
-    if (posts.length === 0) return;
+    if (pagePosts.length === 0) return;
     const jsonLd = {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
@@ -233,9 +235,9 @@ const BlogList = () => {
       description: "발 건강과 러닝화에 대한 깊이 있는 분석",
       mainEntity: {
         "@type": "ItemList",
-        itemListElement: posts.map((post, i) => ({
+        itemListElement: pagePosts.map((post, i) => ({
           "@type": "ListItem",
-          position: i + 1,
+          position: (page - 1) * pagePosts.length + i + 1,
           url: `${CANONICAL_ORIGIN}/blog/${post.slug}`,
           name: post.title,
         })),
@@ -249,7 +251,7 @@ const BlogList = () => {
     return () => {
       document.getElementById("bloglist-jsonld")?.remove();
     };
-  }, [posts]);
+  }, [pagePosts, page]);
 
   if (loading) {
     return (
@@ -258,11 +260,6 @@ const BlogList = () => {
       </div>
     );
   }
-
-  const filteredPosts =
-    activeCategory === "all"
-      ? posts
-      : posts.filter((p) => POST_CATEGORY[p.slug] === activeCategory);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 pt-24">
@@ -278,34 +275,21 @@ const BlogList = () => {
           <DataFallbackNotice message={fallbackMessage} />
         ) : null}
 
-        {/* Category Filter */}
-        <div className="mb-8 flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                activeCategory === cat.key
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
-              }`}
-            >
-              {cat.label}
-              {cat.key !== "all" && (
-                <span className="ml-1.5 text-xs opacity-70">
-                  {
-                    posts.filter((p) => POST_CATEGORY[p.slug] === cat.key)
-                      .length
-                  }
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <BlogListControls
+          query={state.query}
+          category={state.category}
+          counts={counts}
+          onQueryChange={(query) => updateListing({ query }, true)}
+          onCategoryChange={(category: CategoryKey) => updateListing({ category })}
+        />
+        <p className="mb-4 text-sm text-muted-foreground" aria-live="polite">
+          {filtered.length}개의 글
+          {totalPages > 1 ? ` · ${page}/${totalPages} 페이지` : ""}
+        </p>
       </motion.div>
 
       <div className="space-y-4">
-        {filteredPosts.map((post, i) => (
+        {pagePosts.map((post, i) => (
           <motion.div
             key={post.slug}
             initial={{ opacity: 0, y: 20 }}
@@ -356,12 +340,20 @@ const BlogList = () => {
             </Link>
           </motion.div>
         ))}
-        {filteredPosts.length === 0 && (
-          <p className="py-12 text-center text-muted-foreground">
-            해당 카테고리의 글이 없습니다.
-          </p>
+        {filtered.length === 0 && (
+          <div className="py-12 text-center text-muted-foreground">
+            <p>조건에 맞는 글이 없습니다.</p>
+            <button
+              type="button"
+              onClick={() => updateListing({ query: "", category: "all" })}
+              className="mt-3 text-sm text-primary underline"
+            >
+              검색 조건 초기화
+            </button>
+          </div>
         )}
       </div>
+      <Pagination page={page} totalPages={totalPages} hrefFor={hrefForPage} />
     </div>
   );
 };

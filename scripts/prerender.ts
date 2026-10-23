@@ -10,6 +10,13 @@ import * as path from "path";
 import { createClient } from "@libsql/client";
 import { isNoindexPost } from "../api/indexPolicy";
 import { softenMetaText } from "../api/metaText";
+import { SHOES_DB } from "../src/data/shoesDb";
+import { reviewData } from "../src/data/reviewContent";
+import {
+  buildReviewJsonLd,
+  buildReviewMeta,
+  reviewPath,
+} from "../src/lib/reviewSeo";
 
 const DIST = path.resolve(process.cwd(), "dist");
 const BASE_URL = "https://runmania.kr";
@@ -23,6 +30,10 @@ interface RouteConfig {
   ogType?: "website" | "article";
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
+  /** 클라이언트가 같은 JSON-LD를 다시 그릴 때 중복되지 않도록 지정하는 script id */
+  jsonLdId?: string;
+  /** 초기 HTML 본문에 추가할 실제 콘텐츠 요약 */
+  shellExtra?: string;
   /** JS 번들 로드 전에 시작할 API 요청 (글 상세 LCP 단축) */
   preloadApi?: string;
 }
@@ -45,7 +56,7 @@ const ROUTES: RouteConfig[] = [
     path: "/",
     title: "러닝화 추천 · 무료 발 진단 · 신발 리뷰 | 런닝화매니아",
     description:
-      "3분 무료 발 진단으로 내 발 유형(평발·요족·정상)에 맞는 최적의 러닝화를 추천받으세요. 러닝화 리뷰, 달리기 팁, 훈련 계획까지.",
+      "발 치수와 착용 경험으로 러닝화 시착 후보를 좁히고, 모델별 폭 옵션과 착화 정보를 비교하세요. 무료 진단, 리뷰, 달리기 도구까지.",
     keywords: "러닝화 추천, 발 진단, 러닝화 리뷰, 족저근막염 신발, 평발 러닝화",
   },
   {
@@ -64,9 +75,9 @@ const ROUTES: RouteConfig[] = [
   },
   {
     path: "/reviews",
-    title: "러닝화 리뷰 — 29개 모델 상세 비교 | 런닝화매니아",
+    title: `러닝화 리뷰 — ${SHOES_DB.length}개 모델 상세 비교 | 런닝화매니아`,
     description:
-      "아식스 카야노, 나이키 페가수스, 호카 본다이 등 국내 유통 러닝화 29개 모델 상세 리뷰 및 스펙 비교.",
+      `아식스 카야노, 나이키 페가수스, 호카 본디 등 러닝화 ${SHOES_DB.length}개 모델 상세 리뷰 및 스펙 비교.`,
     keywords: "러닝화 리뷰, 러닝화 비교, 아식스 리뷰, 나이키 리뷰, 호카 리뷰",
   },
   {
@@ -214,7 +225,7 @@ function injectMeta(html: string, route: RouteConfig): string {
     )
     .replace(
       /<\/head>/,
-      `${route.noindex ? `${NOINDEX_META}\n` : ""}${route.preloadApi ? `<link rel="preload" as="fetch" href="${route.preloadApi}" crossorigin="anonymous" />\n` : ""}<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
+      `${route.noindex ? `${NOINDEX_META}\n` : ""}${route.preloadApi ? `<link rel="preload" as="fetch" href="${route.preloadApi}" crossorigin="anonymous" />\n` : ""}<script${route.jsonLdId ? ` id="${route.jsonLdId}"` : ""} type="application/ld+json">${JSON.stringify(jsonLd)}</script>\n</head>`,
     );
 }
 
@@ -272,7 +283,7 @@ function ensureDir(dir: string) {
 function renderRouteShell(route: RouteConfig) {
   return `<main class="prerender-shell">
   <h1>${escapeHtml(route.title)}</h1>
-  <p>${escapeHtml(route.description)}</p>
+  <p>${escapeHtml(route.description)}</p>${route.shellExtra ?? ""}
   <nav aria-label="사이트 메뉴">
     <a href="/tools/diagnosis/">무료 발 진단</a>
     <a href="/reviews/">러닝화 리뷰</a>
@@ -285,6 +296,24 @@ function renderRouteShell(route: RouteConfig) {
     <a href="/terms/">이용약관</a>
   </nav>
 </main>`;
+}
+
+function buildReviewRoutes(): RouteConfig[] {
+  return SHOES_DB.map((shoe) => {
+    const review = reviewData[shoe.name];
+    const meta = buildReviewMeta(shoe);
+    const specs = `<ul><li>무게 ${shoe.weightGrams}g</li><li>드롭 ${shoe.dropMm}mm</li><li>폭 옵션 ${shoe.widthAvailable.join(" / ")}</li><li>참고 가격대 ${escapeHtml(shoe.priceRange)}</li></ul>`;
+    const verdict = review ? `<p>${escapeHtml(review.verdict)}</p>` : "";
+    return {
+      path: reviewPath(shoe),
+      title: meta.title,
+      description: meta.description,
+      keywords: meta.keywords,
+      jsonLd: buildReviewJsonLd(shoe, review, undefined),
+      jsonLdId: "review-jsonld",
+      shellExtra: `${verdict}${specs}`,
+    };
+  });
 }
 
 function isReaderDetailRoute(route: RouteConfig) {
@@ -499,7 +528,7 @@ async function main() {
 
   const baseHtml = fs.readFileSync(indexHtml, "utf-8");
   const blogRoutes = await loadPublishedBlogRoutes();
-  const routes = [...ROUTES, ...blogRoutes];
+  const routes = [...ROUTES, ...buildReviewRoutes(), ...blogRoutes];
   console.log(`🚀 Prerendering ${routes.length} routes...\n`);
 
   // deduplicate routes

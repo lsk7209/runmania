@@ -54,7 +54,10 @@
     @apply border-border;
   }
 
+  /* 한글이 낱글자로 쪼개지지 않도록 단어 단위로 줄바꿈 */
   body {
+    word-break: keep-all;
+    overflow-wrap: break-word;
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
   }

@@ -7,14 +7,15 @@
 export const SURVEY_QUESTIONS = [
   {
     no: 1,
-    label: "현재 신는 브랜드와 불편한 점",
+    label: "현재 신는 브랜드와 착용 경험 (기타·첫 구매·모르겠음 선택 가능)",
     effect:
-      "나이키 착용자의 새끼발가락 통증은 넓은 발볼로, 헐거움은 좁은 발볼로 추정",
+      "브랜드만으로 폭을 추정하지 않음. 앞볼 압박 경험은 폭 옵션 우선, 전체 헐거움은 핏 정확한 모델 우선",
   },
   {
     no: 2,
-    label: "발볼 너비 (넓음·보통·좁음)",
-    effect: "발볼 규칙에 직접 사용",
+    label: "발 길이·가장 넓은 폭 (mm, 선택 입력)",
+    effect:
+      "입력 범위만 검증하고 폭/길이 비율을 참고로 표시. 브랜드·모델별 폭 기준이 달라 폭 등급 판정에는 쓰지 않음",
   },
   {
     no: 3,
@@ -36,18 +37,18 @@ export const SURVEY_QUESTIONS = [
 ] as const;
 
 export const EXCLUDE_RULES = [
-  { condition: "넓은 발볼", tag: "wide-foot", penalty: -100 },
+  { condition: "앞볼 압박 경험 + 와이드 옵션이 없는 모델", tag: "wide-foot", penalty: -100 },
   { condition: "편평족", tag: "flat-foot", penalty: -100 },
   { condition: "하이 아치", tag: "high-arch", penalty: -100 },
   { condition: "입문 러너", tag: "beginner", penalty: -50 },
 ] as const;
 
 export const BONUS_RULES = [
-  { condition: "넓은 발볼", points: 30 },
+  { condition: "앞볼 압박 경험 + 와이드 옵션이 있는 모델", points: 30 },
   { condition: "편평족", points: 25 },
   { condition: "하이 아치", points: 25 },
   { condition: "발목 통증", points: 25 },
-  { condition: "좁은 발볼", points: 20 },
+  { condition: "전체 헐거움 경험", points: 20 },
   { condition: "체중 부하", points: 20 },
   { condition: "무릎 통증", points: 20 },
   { condition: "상급 러너", points: 20 },
@@ -63,11 +64,11 @@ export const BONUS_RULES = [
 
 /** 위에서부터 먼저 해당하는 유형이 적용된다 */
 export const TYPE_PRIORITY = [
-  { name: "TYPE A: 구름 위 산책러", when: "넓은 발볼 + 소프트 쿠션 선호" },
+  { name: "TYPE A: 구름 위 산책러", when: "앞볼 압박 경험 + 소프트 쿠션 선호" },
   { name: "TYPE B: 안정성 최우선러", when: "편평족 또는 발목 통증" },
   { name: "TYPE C: 관절 보호 러너", when: "체중 부하 또는 무릎 통증" },
   { name: "TYPE D: 스피드 체이서", when: "상급 러너" },
-  { name: "TYPE E: 와이드 컴포트러", when: "넓은 발볼" },
+  { name: "TYPE E: 와이드 컴포트러", when: "앞볼 압박 경험" },
   { name: "TYPE F: 밸런스 러너", when: "위 조건에 모두 해당하지 않음" },
 ] as const;
 
@@ -94,7 +95,11 @@ export const TOOL_FORMULAS = [
   },
 ] as const;
 
+/** 앞볼 압박 경험이 있어도 와이드 옵션이 있는 모델은 제외하지 않고 감점 후 옵션 확인을 안내한다 */
+export const WIDE_OPTION_PENALTY = -10;
+
 export const LIMITS = [
+  "폭 옵션(2E 등)은 사이트 데이터 기준이며 국내 판매 여부는 확인되지 않았습니다. 구매 전 판매처에서 확인하세요.",
   "신발 데이터는 편집부가 정리한 규칙 기반 목록이며, 개인의 발을 측정하거나 의료적으로 평가하지 않습니다.",
   "같은 점수대의 신발은 순서가 뒤바뀔 수 있고, 새 모델이 나오면 목록과 규칙이 갱신되기 전까지 반영되지 않습니다.",
   "결과는 구매 전 참고용입니다. 최종 선택은 매장에서 직접 신어 보고 결정하세요.",

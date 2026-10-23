@@ -55,9 +55,9 @@ const LandingPage = ({ onStart }: LandingPageProps) => {
           transition={{ delay: 0.5, duration: 0.6 }}
           className="mb-6 text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-5xl"
         >
-          당신의 족저근막염은
+          내 발에 맞는 러닝화,
           <br />
-          <span className="neon-text text-primary">'신발'</span> 때문일 수 있습니다.
+          <span className="neon-text text-primary">시착 후보</span>부터 좁혀보세요.
         </motion.h1>
 
         {/* Sub-headline */}
@@ -67,9 +67,9 @@ const LandingPage = ({ onStart }: LandingPageProps) => {
           transition={{ delay: 0.7 }}
           className="mx-auto mb-10 max-w-md text-base text-muted-foreground sm:text-lg"
         >
-          3분 만에 내 발 모양을 정밀 진단하고,
+          발 치수와 착용 경험을 입력하면 규칙 기반으로 후보를 추리고,
           <br />
-          절대 신으면 안 되는 신발을 걸러내세요.
+          모델별 폭 옵션과 시착 체크 항목을 알려드려요. 의료 진단이 아닙니다.
         </motion.p>
 
         {/* CTA Button */}

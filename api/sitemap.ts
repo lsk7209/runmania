@@ -29,7 +29,8 @@ const STATIC_PAGES = [
   { path: "/tools/size-converter", changefreq: "monthly", priority: "0.5" },
 ];
 
-const REVIEW_SLUGS = [
+/** src/data/reviewSlug.ts의 REVIEW_SLUGS와 같아야 한다 (reviewRoutes.test.ts가 검사) */
+export const REVIEW_SLUGS = [
   "뉴발란스-프레시폼-1080-v13-2e",
   "뉴발란스-프레시폼-모어-v4",
   "아식스-젤카야노-30",
@@ -57,7 +58,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).end();
 
   try {
-    const today = new Date().toISOString().slice(0, 10);
     const result = await tursoClient.execute(
       `SELECT slug, published_at, updated_at
        FROM blog_posts
@@ -68,7 +68,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const staticEntries = STATIC_PAGES.map(
       (p) => `  <url>
     <loc>${BASE_URL}${p.path}</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`,
@@ -77,7 +76,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const reviewEntries = REVIEW_SLUGS.map(
       (slug) => `  <url>
     <loc>${BASE_URL}/reviews/${slug}</loc>
-    <lastmod>${today}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>`,

@@ -10,7 +10,7 @@ import {
 
 const BASE: UserAnswers = {
   q1Brand: "other",
-  q2Width: "normal",
+  q2Fit: "fine",
   q3Arch: "normal",
   q4Weight: "normal",
   q5Level: "intermediate",
@@ -27,7 +27,7 @@ describe("진단 방법 페이지는 엔진의 실제 동작과 일치한다", (
 
   it("제외 규칙: 해당 태그가 있는 신발은 추천·대안에 나오지 않는다", () => {
     const cases = [
-      { over: { q2Width: "wide" }, tag: "wide-foot" },
+      { over: { q2Fit: "forefoot-tight" as const }, tag: "wide-foot" },
       { over: { q3Arch: "flat" }, tag: "flat-foot" },
       { over: { q3Arch: "high" }, tag: "high-arch" },
       { over: { q5Level: "beginner" }, tag: "beginner" },
@@ -40,24 +40,28 @@ describe("진단 방법 페이지는 엔진의 실제 동작과 일치한다", (
     }
   });
 
-  it("-100점 규칙의 신발은 권하지 않는 목록에 들어간다", () => {
-    const wide = diagnose({ ...BASE, q2Width: "wide" });
-    const expected = SHOES_DB.filter((s) => s.banFor.includes("wide-foot"));
-    expect(wide.banned.map((s) => s.name).sort()).toEqual(
+  it("-100점 규칙의 신발은 우선순위를 낮춘 목록에 들어간다 (와이드 옵션 모델은 제외)", () => {
+    const wide = diagnose({ ...BASE, q2Fit: "forefoot-tight" });
+    const expected = SHOES_DB.filter(
+      (s) =>
+        s.banFor.includes("wide-foot") &&
+        s.widthAvailable.every((w) => w === "표준"),
+    );
+    expect(wide.caution.map((s) => s.name).sort()).toEqual(
       expected.map((s) => s.name).sort(),
     );
   });
 
   it("유형 우선순위가 표와 같다", () => {
     expect(
-      typeOf({ q2Width: "wide", q7Cushion: "soft", q3Arch: "flat" }),
+      typeOf({ q2Fit: "forefoot-tight", q7Cushion: "soft", q3Arch: "flat" }),
     ).toContain("TYPE A");
     expect(typeOf({ q3Arch: "flat", q4Weight: "heavy" })).toContain("TYPE B");
     expect(typeOf({ q6Pain: "ankle" })).toContain("TYPE B");
     expect(typeOf({ q4Weight: "heavy" })).toContain("TYPE C");
     expect(typeOf({ q6Pain: "knee" })).toContain("TYPE C");
     expect(typeOf({ q5Level: "advanced" })).toContain("TYPE D");
-    expect(typeOf({ q2Width: "wide" })).toContain("TYPE E");
+    expect(typeOf({ q2Fit: "forefoot-tight" })).toContain("TYPE E");
     expect(typeOf({})).toContain("TYPE F");
     expect(TYPE_PRIORITY.map((t) => t.name.slice(0, 6))).toEqual([
       "TYPE A",

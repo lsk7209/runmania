@@ -231,15 +231,15 @@ const Home = () => {
           </div>
 
           <h1 className="mb-6 text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-5xl">
-            러닝화 추천, 내 발에 맞는 신발
+            내 발에 맞는 러닝화,
             <br />
-            <span className="neon-text text-primary">데이터</span>로 찾아드립니다.
+            <span className="neon-text text-primary">근거</span>를 보고 고르세요.
           </h1>
 
           <p className="mx-auto mb-8 max-w-md text-base text-muted-foreground sm:text-lg">
-            발볼, 아치, 통증 신호, 러닝 목적을 함께 보고
+            발 치수와 착용 경험으로 후보를 좁히고,
             <br />
-            초보 러너가 피해야 할 신발까지 정리합니다.
+            제품별 폭 옵션과 착화 정보를 비교하세요.
           </p>
 
           {/* 신뢰 통계 */}
@@ -260,13 +260,13 @@ const Home = () => {
                 size="lg"
                 className="group gap-2 rounded-xl bg-primary px-8 py-6 text-base font-semibold text-primary-foreground neon-border transition-all hover:neon-border-strong"
               >
-                무료 발 진단 받기
+                내 러닝화 찾기
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Link
-              to="/blog"
-              onClick={() => trackEvent("cta_clicked", { location: "home_hero", target: "blog" })}
+              to="/reviews"
+              onClick={() => trackEvent("cta_clicked", { location: "home_hero", target: "reviews" })}
             >
               <Button
                 size="lg"
@@ -274,7 +274,7 @@ const Home = () => {
                 className="gap-2 rounded-xl border-border px-8 py-6 text-base hover:bg-secondary"
               >
                 <BookOpen className="h-4 w-4" />
-                블로그 보기
+                모델 비교
               </Button>
             </Link>
           </div>

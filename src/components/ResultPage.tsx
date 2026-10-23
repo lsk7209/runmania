@@ -29,10 +29,30 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import type { DiagnosisResult, Shoe } from "@/data/shoesDb";
 import { getShoeImage, illustrationAlt } from "@/data/shoeImages";
+import { shoeSlug } from "@/data/reviewSlug";
+import { trackEvent } from "@/lib/analytics";
 
-function shoeSlug(name: string) {
-  return name.replace(/\s+/g, "-").replace(/[()]/g, "").toLowerCase();
-}
+const CAFE_SEARCH_URL = "https://cafe.naver.com/ArticleSearchList.nhn?search.query=";
+
+/** 후보 이유·확인할 제품 구분 안내 */
+const ShoeNotes = ({ reasons, notes }: { reasons?: string[]; notes?: string[] }) => (
+  <div className="mt-3 space-y-2 text-xs leading-5">
+    {reasons && reasons.length > 0 && (
+      <ul className="list-disc space-y-0.5 pl-4 text-secondary-foreground">
+        {reasons.map((r) => (
+          <li key={r}>{r}</li>
+        ))}
+      </ul>
+    )}
+    {notes && notes.length > 0 && (
+      <ul className="list-disc space-y-0.5 pl-4 text-muted-foreground">
+        {notes.map((n) => (
+          <li key={n}>{n}</li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
 
 interface ResultPageProps {
   result: DiagnosisResult;
@@ -170,7 +190,7 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
   const searchQuery = encodeURIComponent(result.recommended.name);
   const allRecommended = [result.recommended, ...result.alternatives];
 
-  const shareText = `🏃 내 러닝화 진단 결과: ${result.typeName}\n👟 추천: ${result.recommended.name}\n${result.banned.length > 0 ? `🚫 금지: ${result.banned.map((s) => s.name).join(", ")}\n` : ""}`;
+  const shareText = `🏃 내 러닝화 선택 가이드: ${result.typeName}\n👟 시착 후보: ${result.recommended.name}\n`;
   const shareUrl = window.location.href;
 
   const handleSaveImage = useCallback(async () => {
@@ -340,7 +360,7 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
             <div className="border-b border-border p-6">
               <div className="mb-3 flex items-center gap-2 text-xs font-medium text-primary">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                추천 신발 (BEST PICK)
+                시착 1순위 후보
               </div>
 
               <ShoeImage shoe={result.recommended} />
@@ -357,6 +377,15 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
               <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
                 {result.recommended.description}
               </p>
+              {result.lowConfidence && (
+                <p className="mb-4 rounded-lg border border-border bg-secondary/40 p-3 text-xs leading-5 text-muted-foreground">
+                  입력한 조건과 뚜렷하게 맞는 가산 요소가 없어 일반적인 데일리 트레이너를 예시로 보여드립니다.
+                </p>
+              )}
+              <ShoeNotes
+                reasons={result.reasons[result.recommended.name]}
+                notes={result.notes[result.recommended.name]}
+              />
 
               {/* Shoe specs */}
               <div className="mb-4 space-y-3">
@@ -398,7 +427,7 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
             {result.alternatives.length > 0 && (
               <div className="border-b border-border p-6">
                 <p className="mb-3 text-xs font-medium text-muted-foreground">
-                  대안 추천
+                  함께 시착해 볼 후보
                 </p>
                 <div className="space-y-4">
                   {result.alternatives.map((shoe) => (
@@ -421,6 +450,10 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
                         <p className="mt-1 text-xs text-muted-foreground">
                           {shoe.description}
                         </p>
+                        <ShoeNotes
+                          reasons={result.reasons[shoe.name]}
+                          notes={result.notes[shoe.name]}
+                        />
                         <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]">
                           <span className="rounded bg-secondary px-2 py-0.5 text-muted-foreground">
                             쿠션 {shoe.cushionLevel}/5
@@ -453,57 +486,75 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
               </div>
             )}
 
-            {/* Banned shoes */}
-            {result.banned.length > 0 && (
+            {/* 우선순위를 낮춘 모델 */}
+            {result.caution.length > 0 && (
               <div className="border-b border-border p-6">
-                <div className="mb-3 flex items-center gap-2 text-xs font-medium text-destructive">
+                <div className="mb-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <ShieldAlert className="h-3.5 w-3.5" />
-                  착용 금지 (BANNED)
+                  입력 조건과 맞지 않을 수 있는 모델 (우선순위 낮춤)
                 </div>
-                <div className="space-y-3">
-                  {result.banned.map((shoe) => (
-                    <div
+                <ul className="space-y-2">
+                  {result.caution.map((shoe) => (
+                    <li
                       key={shoe.name}
-                      className="rounded-xl border border-destructive/20 bg-destructive/5 overflow-hidden"
+                      className="flex items-start gap-2 rounded-xl border border-border bg-secondary/30 p-3 text-xs leading-5"
                     >
-                      {getShoeImage(shoe.name) && (
-                        <div className="relative">
-                          <img
-                            src={getShoeImage(shoe.name)}
-                            alt={illustrationAlt(shoe.name)}
-                            className="h-32 w-full object-cover opacity-40"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="rounded-full bg-destructive/90 px-4 py-1.5 text-xs font-bold text-destructive-foreground">
-                              착용 금지
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <div className="flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4 text-destructive" />
-                          <span className="text-sm font-bold text-destructive">
-                            {shoe.name}
-                          </span>
-                        </div>
-                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                          {shoe.description}
-                        </p>
-                      </div>
-                    </div>
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span>
+                        <Link
+                          to={`/reviews/${shoeSlug(shoe.name)}`}
+                          className="font-semibold hover:text-primary"
+                        >
+                          {shoe.name}
+                        </Link>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          — 입력한 조건 기준으로 후순위일 뿐 착용 금지가 아닙니다. 시착해 보고 판단하세요.
+                        </span>
+                      </span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
             )}
 
-            {/* Prescription detail */}
-            <div className="p-6 prescription-bg">
-              <p className="mb-2 text-[10px] tracking-widest text-muted-foreground">
-                상세 분석
-              </p>
-              <p className="text-sm leading-relaxed text-secondary-foreground">
-                {result.prescriptionDetail}
+            {/* 선택 가이드 */}
+            <div className="space-y-5 p-6 prescription-bg">
+              <div>
+                <p className="mb-2 text-[10px] tracking-widest text-muted-foreground">
+                  선택 가이드
+                </p>
+                <p className="text-sm leading-relaxed text-secondary-foreground">
+                  {result.selectionGuide}
+                </p>
+              </div>
+              <div>
+                <p className="mb-2 text-[10px] tracking-widest text-muted-foreground">
+                  시착할 때 확인할 것
+                </p>
+                <ul className="list-disc space-y-1 pl-4 text-xs leading-5 text-secondary-foreground">
+                  {result.fitChecks.map((c) => (
+                    <li key={c}>{c}</li>
+                  ))}
+                </ul>
+              </div>
+              {result.missingInfo.length > 0 && (
+                <div>
+                  <p className="mb-2 text-[10px] tracking-widest text-muted-foreground">
+                    결과 해석 시 참고
+                  </p>
+                  <ul className="list-disc space-y-1 pl-4 text-xs leading-5 text-muted-foreground">
+                    {result.missingInfo.map((m) => (
+                      <li key={m}>{m}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <p className="text-[11px] leading-5 text-muted-foreground">
+                이 결과는 입력한 답변을 규칙으로 점수화한 참고 정보이며 의료적 진단이 아닙니다.{" "}
+                <Link to="/methodology" className="underline hover:text-primary">
+                  산정 방식 보기
+                </Link>
               </p>
             </div>
           </motion.div>
@@ -594,23 +645,30 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="space-y-3"
         >
-          <a
-            href={`https://cafe.naver.com/ArticleSearchList.nhn?search.query=${searchQuery}+사이즈`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to={`/reviews/${shoeSlug(result.recommended.name)}`}
             className="block"
+            onClick={() => trackEvent("recommendation_detail_click", { model: shoeSlug(result.recommended.name) })}
           >
-            <Button
-              variant="outline"
-              className="w-full justify-between gap-2 border-border bg-card py-5 hover:bg-secondary"
-            >
-              이 신발 사이즈 팁 확인 (카페 검색)
+            <Button className="w-full justify-between gap-2 py-5">
+              {result.recommended.name} 상세 리뷰 보기
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </Link>
+
+          <Link
+            to="/reviews"
+            className="block"
+            onClick={() => trackEvent("comparison_open", { location: "diagnosis_result" })}
+          >
+            <Button variant="outline" className="w-full justify-between gap-2 border-border bg-card py-5 hover:bg-secondary">
+              다른 모델과 비교하기
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </Button>
-          </a>
+          </Link>
 
           <a
-            href={`https://cafe.naver.com/ArticleSearchList.nhn?search.query=${searchQuery}+핫딜`}
+            href={`${CAFE_SEARCH_URL}${searchQuery}+사이즈`}
             target="_blank"
             rel="noopener noreferrer"
             className="block"
@@ -619,7 +677,7 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
               variant="outline"
               className="w-full justify-between gap-2 border-border bg-card py-5 hover:bg-secondary"
             >
-              최저가 핫딜 정보
+              네이버 카페에서 사이즈 후기 검색 (외부 검색)
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </Button>
           </a>
@@ -634,10 +692,13 @@ const ResultPage = ({ result, onRestart }: ResultPageProps) => {
               variant="outline"
               className="w-full justify-between gap-2 border-border bg-card py-5 hover:bg-secondary"
             >
-              내 발 사진 검증받기
+              러너스클럽 카페 열기 (외부 커뮤니티)
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </Button>
           </a>
+          <p className="text-[11px] leading-5 text-muted-foreground">
+            외부 링크는 검색·커뮤니티 이동이며 가격 비교나 최저가를 보장하지 않습니다. 가격과 재고는 판매처에서 직접 확인하세요.
+          </p>
 
           <Button
             variant="ghost"
